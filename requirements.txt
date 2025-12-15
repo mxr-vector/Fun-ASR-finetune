@@ -1,1 +1,2 @@
-funasr
+funasr>=1.2.7
+openai-whisper>=20250625

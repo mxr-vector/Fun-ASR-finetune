@@ -25,6 +25,13 @@ Online Experience:
 
 </div>
 
+<a name="What's News"></a>
+
+# What's New 🔥
+
+- 2025/12: [Fun-ASR-Nano-2512](https://modelscope.cn/models/FunAudioLLM/Fun-ASR-Nano-2512) is an end-to-end speech recognition large model trained on tens of millions of hours real speech data. It supports low-latency real-time transcription and covers 31 languages.
+- 2024/7: [FunASR](https://github.com/modelscope/FunASR) is a fundamental speech recognition toolkit that offers a variety of features, including speech recognition (ASR), Voice Activity Detection (VAD), Punctuation Restoration, Language Models, Speaker Verification, Speaker Diarization and multi-talker ASR.
+
 # Core Features 🎯
 
 **Fun-ASR** focuses on high-precision speech recognition, multi-language support, and industry customization capabilities

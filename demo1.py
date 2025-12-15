@@ -2,7 +2,7 @@ from funasr import AutoModel
 
 
 def main():
-    model_dir = "FunAudioLLM/fun-asr-nano"
+    model_dir = "FunAudioLLM/Fun-ASR-Nano-2512"
     model = AutoModel(
         model=model_dir,
         trust_remote_code=True,

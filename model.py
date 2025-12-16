@@ -550,6 +550,26 @@ class FunASRNano(nn.Module):
         frontend=None,
         **kwargs,
     ):
+        hotwords = kwargs.get("hotwords", [])
+        if len(hotwords) > 0:
+            hotwords = ", ".join(hotwords)
+            prompt = f"请结合上下文信息，更加准确地完成语音转写任务。如果没有相关信息，我们会留空。\n\n\n**上下文信息：**\n\n\n"
+            prompt += f"热词列表：[{hotwords}]\n"
+        else:
+            prompt = ""
+        language = kwargs.get("language", "auto")
+        if language not in ("auto", "zh", "en", "ja"):
+            language = "auto"
+        if language == "auto":
+            prompt += "语音转写"
+        else:
+            LANGUAGE_MAP = {"zh": "中文", "en": "英文", "ja": "日文"}
+            prompt += f"语音转写成{LANGUAGE_MAP[language]}"
+        itn = kwargs.get("itn", True)
+        if not itn:
+            prompt += "，不进行文本规整"
+        prompt += "："
+
         new_data_in = []
         for data in data_in:
             if isinstance(data, str):
@@ -558,7 +578,7 @@ class FunASRNano(nn.Module):
                         {"role": "system", "content": "You are a helpful assistant."},
                         {
                             "role": "user",
-                            "content": f"语音转写：<|startofspeech|>!{data}<|endofspeech|>",
+                            "content": f"{prompt}<|startofspeech|>!{data}<|endofspeech|>",
                         },
                         {"role": "assistant", "content": "null"},
                     ]
@@ -569,7 +589,7 @@ class FunASRNano(nn.Module):
                         {"role": "system", "content": "You are a helpful assistant."},
                         {
                             "role": "user",
-                            "content": f"语音转写：<|startofspeech|>!!<|endofspeech|>",
+                            "content": f"{prompt}<|startofspeech|>!!<|endofspeech|>",
                             "audio": data,
                         },
                         {"role": "assistant", "content": "null"},

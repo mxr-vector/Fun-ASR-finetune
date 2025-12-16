@@ -11,7 +11,14 @@ def main():
     )
 
     wav_path = f"{model.model_path}/example/zh.mp3"
-    res = model.generate(input=[wav_path], cache={}, batch_size=1)
+    res = model.generate(
+        input=[wav_path],
+        cache={},
+        batch_size=1,
+        hotwords=["开放时间"],
+        language="zh", # auto, zh, en, ja
+        itn=True, # or False
+    )
     text = res[0]["text"]
     print(text)
 

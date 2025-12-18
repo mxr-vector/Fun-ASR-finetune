@@ -150,3 +150,14 @@ We compared the multi-language speech recognition performance of Fun-ASR with ot
 <div align="center">
 <img src="images/compare_en.png" width="800" />
 </div>
+
+## Citations
+
+```bibtex
+@article{an2025fun,
+  title={Fun-ASR Technical Report},
+  author={An, Keyu and Chen, Yanni and Deng, Chong and Gao, Changfeng and Gao, Zhifu and Gong, Bo and Li, Xiangang and Li, Yabin and Lv, Xiang and Ji, Yunjie and others},
+  journal={arXiv preprint arXiv:2509.12508},
+  year={2025}
+}
+```

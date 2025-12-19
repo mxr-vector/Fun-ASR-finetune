@@ -1,9 +1,15 @@
+import torch
 from model import FunASRNano
 
 
 def main():
     model_dir = "FunAudioLLM/Fun-ASR-Nano-2512"
-    m, kwargs = FunASRNano.from_pretrained(model=model_dir, device="cuda:0")
+    device = (
+        "cuda:0"
+        if torch.cuda.is_available()
+        else "mps" if torch.backends.mps.is_available() else "cpu"
+    )
+    m, kwargs = FunASRNano.from_pretrained(model=model_dir, device=device)
     m.eval()
 
     wav_path = f"{kwargs['model_path']}/example/zh.mp3"

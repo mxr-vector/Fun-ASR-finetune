@@ -1,13 +1,19 @@
+import torch
 from funasr import AutoModel
 
 
 def main():
     model_dir = "FunAudioLLM/Fun-ASR-Nano-2512"
+    device = (
+        "cuda:0"
+        if torch.cuda.is_available()
+        else "mps" if torch.backends.mps.is_available() else "cpu"
+    )
     model = AutoModel(
         model=model_dir,
         trust_remote_code=True,
         remote_code="./model.py",
-        device="cuda:0",
+        device=device,
     )
 
     wav_path = f"{model.model_path}/example/zh.mp3"
@@ -28,7 +34,7 @@ def main():
         vad_model="fsmn-vad",
         vad_kwargs={"max_single_segment_time": 30000},
         remote_code="./model.py",
-        device="cuda:0",
+        device=device,
     )
     res = model.generate(input=[wav_path], cache={}, batch_size=1)
     text = res[0]["text"]

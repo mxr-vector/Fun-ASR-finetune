@@ -125,7 +125,6 @@ class FunASRNano(nn.Module):
         self.use_low_frame_rate = audio_adaptor_conf.get("use_low_frame_rate", False)
 
         self.length_normalized_loss = length_normalized_loss
-        self.feat_permute = audio_encoder_conf.get("feat_permute", True)
         rank = int(os.environ.get("RANK", 0))
         logging.info(f"rank: {rank}, model is builded.")
 
@@ -255,12 +254,7 @@ class FunASRNano(nn.Module):
 
     def encode(self, speech, speech_lengths):
         # audio encoder
-        if self.feat_permute:
-            encoder_out, encoder_out_lens = self.audio_encoder(
-                speech.permute(0, 2, 1), speech_lengths
-            )
-        else:
-            encoder_out, encoder_out_lens = self.audio_encoder(speech, speech_lengths)
+        encoder_out, encoder_out_lens = self.audio_encoder(speech, speech_lengths)
 
         return encoder_out, encoder_out_lens
 
@@ -384,9 +378,6 @@ class FunASRNano(nn.Module):
                             * frontend.lfr_n
                             / 1000
                         )
-
-                        if self.feat_permute:
-                            speech = speech.permute(0, 2, 1)
 
                         if self.use_low_frame_rate:
                             olens = 1 + (speech_lengths[0].item() - 3 + 2 * 1) // 2

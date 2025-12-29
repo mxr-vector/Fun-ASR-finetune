@@ -62,7 +62,7 @@ pip install -r requirements.txt
 
 - [ ] Support returning timestamps
 - [ ] Support speaker diarization
-- [ ] Support model training
+- [x] Support model training
 
 # Usage 🛠️
 

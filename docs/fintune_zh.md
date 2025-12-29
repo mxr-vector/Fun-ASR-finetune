@@ -53,6 +53,10 @@ python tools/scp2jsonl.py \
 
 ## 启动训练
 
+修改 `finetune.sh` 中的 `audio_encoder_conf.freeze`, `audio_adaptor_conf.freeze` 和 `llm_conf.freeze`。
+
+将需要微调的模块 `freeze` 设置成 `false`（默认只微调 llm）。
+
 ```
 bash finetune.sh
 ```

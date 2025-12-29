@@ -49,6 +49,10 @@ python tools/scp2jsonl.py \
 
 ## Finetune
 
+Modify the `audio_encoder_conf.freeze`, `audio_adaptor_conf.freeze`, and `llm_conf.freeze` in `finetune.sh`.
+
+Set the `freeze` parameter of the modules to be fine-tuned to false(by default, only the LLM is fine-tuned).
+
 ```
 bash finetune.sh
 ```

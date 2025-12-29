@@ -68,4 +68,7 @@ ${train_tool} \
 ++train_conf.use_deepspeed=false \
 ++train_conf.deepspeed_config=${deepspeed_config} \
 ++optim_conf.lr=0.0002 \
+++audio_encoder_conf.freeze=true \
+++audio_adaptor_conf.freeze=true \
+++llm_conf.freeze=false \
 ++output_dir="${output_dir}" &> ${log_file}

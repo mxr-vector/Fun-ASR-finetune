@@ -70,5 +70,7 @@ ${train_tool} \
 ++optim_conf.lr=0.0002 \
 ++audio_encoder_conf.freeze=true \
 ++audio_adaptor_conf.freeze=true \
-++llm_conf.freeze=false \
+++llm_conf.freeze=true \
+++llm_conf.use_lora=true \
+++llm_conf.lora_conf.freeze_lora=false \
 ++output_dir="${output_dir}" &> ${log_file}

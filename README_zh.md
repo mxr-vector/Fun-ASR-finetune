@@ -147,6 +147,10 @@ if __name__ == "__main__":
 
 </details>
 
+# 微调
+
+详情请参考 [docs/finetune_zh.md](docs/finetune.md)
+
 # 性能评测 📝
 
 我们在开源基准数据集、中文方言测试集和工业测试集上，比较了 Fun-ASR 与其他模型的多语言语音识别性能。Fun-ASR 模型均具有明显的效果优势。
@@ -193,12 +197,12 @@ if __name__ == "__main__":
 
 ```bibtex
 @misc{an2025funasrtechnicalreport,
-      title={Fun-ASR Technical Report}, 
+      title={Fun-ASR Technical Report},
       author={Keyu An and Yanni Chen and Zhigao Chen and Chong Deng and Zhihao Du and Changfeng Gao and Zhifu Gao and Bo Gong and Xiangang Li and Yabin Li and Ying Liu and Xiang Lv and Yunjie Ji and Yiheng Jiang and Bin Ma and Haoneng Luo and Chongjia Ni and Zexu Pan and Yiping Peng and Zhendong Peng and Peiyao Wang and Hao Wang and Haoxu Wang and Wen Wang and Wupeng Wang and Yuzhong Wu and Biao Tian and Zhentao Tan and Nan Yang and Bin Yuan and Jieping Ye and Jixing Yu and Qinglin Zhang and Kun Zou and Han Zhao and Shengkui Zhao and Jingren Zhou and Yanqiao Zhu},
       year={2025},
       eprint={2509.12508},
       archivePrefix={arXiv},
       primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2509.12508}, 
+      url={https://arxiv.org/abs/2509.12508},
 }
 ```

@@ -7,7 +7,9 @@ def main():
     device = (
         "cuda:0"
         if torch.cuda.is_available()
-        else "mps" if torch.backends.mps.is_available() else "cpu"
+        else "mps"
+        if torch.backends.mps.is_available()
+        else "cpu"
     )
     model = AutoModel(
         model=model_dir,
@@ -28,7 +30,7 @@ def main():
         # 匈牙利语、爱尔兰语、拉脱维亚语、立陶宛语、马耳他语、波兰语、葡萄牙语、罗马尼亚语、
         # 斯洛伐克语、斯洛文尼亚语、瑞典语 for Fun-ASR-MLT-Nano-2512
         language="中文",
-        itn=True, # or False
+        itn=True,  # or False
     )
     text = res[0]["text"]
     print(text)

@@ -8,7 +8,9 @@ def main():
     device = (
         "cuda:0"
         if torch.cuda.is_available()
-        else "mps" if torch.backends.mps.is_available() else "cpu"
+        else "mps"
+        if torch.backends.mps.is_available()
+        else "cpu"
     )
     m, kwargs = FunASRNano.from_pretrained(model=model_dir, device=device)
     m.eval()

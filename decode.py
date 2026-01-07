@@ -3,7 +3,7 @@ import os
 import hydra
 import torch
 from funasr import AutoModel
-from omegaconf import DictConfig, OmegaConf, ListConfig
+from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
 @hydra.main(config_name=None, version_base=None)

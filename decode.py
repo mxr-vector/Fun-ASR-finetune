@@ -2,7 +2,6 @@ import os
 
 import hydra
 import torch
-from funasr import AutoModel
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
@@ -28,6 +27,9 @@ def main_hydra(cfg: DictConfig):
         if torch.backends.mps.is_available()
         else "cpu"
     )
+
+    from funasr import AutoModel
+
     model = AutoModel(
         model=model_dir,
         trust_remote_code=True,

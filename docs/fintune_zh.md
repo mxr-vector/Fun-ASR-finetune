@@ -5,7 +5,7 @@
 ## 安装训练环境
 
 ```
-pip install git+https://github.com/modelscope/FunASR
+pip install funasr>=1.3.0
 ```
 
 ## 数据准备

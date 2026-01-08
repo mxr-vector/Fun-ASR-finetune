@@ -1,5 +1,4 @@
 import torch
-from funasr import AutoModel
 
 
 def main():
@@ -11,6 +10,9 @@ def main():
         if torch.backends.mps.is_available()
         else "cpu"
     )
+
+    from funasr import AutoModel
+
     model = AutoModel(
         model=model_dir,
         trust_remote_code=True,

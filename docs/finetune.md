@@ -5,7 +5,7 @@
 ## Requirements
 
 ```
-pip install git+https://github.com/modelscope/FunASR
+pip install funasr>=1.3.0
 ```
 
 ## Data Prepare

@@ -1,5 +1,7 @@
 # Finetune
 
+「[简体中文](fintune_zh.md)」|「English」
+
 ## Requirements
 
 ```

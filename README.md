@@ -81,6 +81,8 @@ def main():
         trust_remote_code=True,
         remote_code="./model.py",
         device="cuda:0",
+        # hub：download models from ms (for ModelScope) or hf (for Hugging Face).
+        hub="hf"
     )
 
     wav_path = f"{model.model_path}/example/zh.mp3"

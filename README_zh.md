@@ -81,6 +81,7 @@ def main():
         trust_remote_code=True,
         remote_code="./model.py",
         device="cuda:0",
+        hub="ms"
     )
 
     wav_path = f"{model.model_path}/example/zh.mp3"

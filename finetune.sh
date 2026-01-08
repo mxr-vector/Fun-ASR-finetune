@@ -53,6 +53,7 @@ ${train_tool} \
 ++train_conf.resume=true \
 ++train_conf.validate_interval=2000 \
 ++train_conf.save_checkpoint_interval=2000 \
+++train_conf.effective_save_name_excludes="None" \
 ++train_conf.keep_nbest_models=20 \
 ++train_conf.avg_nbest_model=10 \
 ++train_conf.use_deepspeed=false \

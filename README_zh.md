@@ -196,7 +196,7 @@ if __name__ == "__main__":
 
 ## 优秀三方工作
 
-- vLLM (GPU) 最佳部署时间: 使用 vLLM 实现对 Fun-ASR 的加速. [Repository](https://github.com/yuekaizhang/Fun-ASR-vllm/README.md)
+- vLLM (GPU) 最佳部署实践: 使用 vLLM 实现对 Fun-ASR 的加速. [Repository](https://github.com/yuekaizhang/Fun-ASR-vllm)
 
 ## Citations
 

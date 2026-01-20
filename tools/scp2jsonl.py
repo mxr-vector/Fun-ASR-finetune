@@ -80,7 +80,10 @@ def main_hydra(cfg: DictConfig):
     max_workers = kwargs.get("max_workers", os.cpu_count())
     jsonl_file = kwargs["jsonl_file"]
 
-    with open(scp_file, "r") as f1, open(transcript_file, "r") as f2:
+    with (
+        open(scp_file, "r", encoding="utf-8") as f1,
+        open(transcript_file, "r", encoding="utf-8") as f2,
+    ):
         scp_lines = f1.readlines()
         transcript_lines = f2.readlines()
 

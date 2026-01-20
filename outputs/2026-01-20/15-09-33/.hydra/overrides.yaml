@@ -1,3 +1,0 @@
-- ++scp_file=data/zh/train/wav.scp
-- ++transcript_file=data/zh/train/wav.txt
-- ++jsonl_file=data/zh/train/wav.jsonl

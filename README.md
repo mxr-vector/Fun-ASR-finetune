@@ -212,3 +212,95 @@ We evaluated Fun-ASR against other state-of-the-art models on open-source benchm
       url={https://arxiv.org/abs/2509.12508},
 }
 ```
+
+
+## Phased Mixed Training
+
+Refer to the official website：https://gitee.com/WangJiaHui202144/funasr-nano/blob/main/docs/fintune_zh.md
+
+Train: Valid: Test = 8:1:1
+G1-G66590 train dataset
+G66591-G74915 valid dataset
+G74916-G83238 test dataset
+A total of 83,238 entries, with an approximate total duration of 87 hours. Additionally, to enhance the model's generalization capability, 
+the WenetSpeech dataset, which aligns with the business scenario, was utilized. Given the dataset's small size, only the audio adapter layer was debugged.
+
+1. Warm-up Training
+General Data: Specialized Data = 50:50  87h:87h
+Training Rounds: 5-10 epochs
+Objective: Activate the model's adaptability to diverse speech patterns
+
+2. Domain Adaptation
+General Data: Specialized Data = 20:80  20h:87h
+Training Epochs: 15-20 epochs
+Objective: Strengthen specialized features while maintaining generalization
+
+3. Purely technical data: 100%  87h
+Training epochs: 5-10 epochs
+Objective: Maximize domain accuracy
+
+To reduce data preparation complexity, support for mixed-sample data is provided.
+1. tools/datasets_utils.py can generate SCP files that meet requirements
+2. Generate JSONL files for input features in Nano format
+**linux**
+```python
+ uv run tools/scp2jsonl.py \
+  ++scp_file=data/train_wav.scp \
+  ++transcript_file=data/train_text.txt \
+  ++jsonl_file=data/train_example.jsonl
+```
+**win**
+```bash
+uv run tools/scp2jsonl.py ++scp_file=data/domain/train/wav.scp ++transcript_file=data/domain/train/wav.txt ++jsonl_file=data/domain/train/wav.jsonl
+```
+##  3.Use prepare_staged_data.py to blend datasets
+
+Operational Data Preparation
+```python
+uv run prepare_staged_data.py \
+  --general_train data/general/train.jsonl \
+  --general_val data/general/val.jsonl \
+  --domain_train data/domain/train.jsonl \
+  --domain_val data/domain/val.jsonl \
+  --output_dir data/staged
+```
+  
+```bash
+# Output results：
+# data/staged/
+# ├── stage1/
+# │   ├── train.jsonl (mixed50/50)
+# │   └── val.jsonl
+# ├── stage2/
+# │   ├── train.jsonl (mixed20/80)
+# │   └── val.jsonl
+# └── stage3/
+#     ├── train.jsonl (纯专业)
+#     └── val.jsonl
+```
+
+
+## 4.Fine-tune the parameters in finetune_stage.sh
+
+```
+# Pre-trained Model Path
+model_name_or_model_dir="models/Fun-ASR-Nano-2512"
+
+# Full-process encoder freeze
+FREEZE_PARAMS="
+++audio_encoder_conf.freeze=true \
+++audio_adaptor_conf.freeze=false \
+++llm_conf.freeze=true
+```
+| params| content|
+|--|--|
+|model_name_or_model_dir|Model Path|
+|audio_encoder_conf|Acoustic Encoder, True Freeze|
+|audio_adaptor_conf|Acoustic Adaptation Layer, false (does not freeze)|
+|llm_conf|High-Level Semantic Module, true freeze|
+
+## 5.One-Click Training
+
+```bash
+nohup bash auto_finuetune.sh > full_train.log 2>&1 &
+```

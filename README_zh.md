@@ -211,3 +211,94 @@ if __name__ == "__main__":
       url={https://arxiv.org/abs/2509.12508},
 }
 ```
+
+
+## 分阶段混合训练
+
+参考官网：https://gitee.com/WangJiaHui202144/funasr-nano/blob/main/docs/fintune_zh.md
+
+训练:验证:测试 = 8:1:1
+G1-G66590 train集
+G66591-G74915 valid集
+G74916-G83238 test集
+共计83238条，总时长约87h。此外为了增强模型泛化能力 
+调取符合业务场景的WenetSpeech数据集，且数据集较小，仅调试音频适配器层
+1.预热训练
+通用数据：专业数据 = 50:50  87h:87h
+训练轮数：5-10 epochs
+目标：激活模型对多样化语音的适应能力
+
+2.领域适配
+通用数据：专业数据 = 20:80  20h:87h
+训练轮数：15-20 epochs
+目标：在保持泛化的前提下强化专业特征
+
+3.纯专业数据：100%  87h
+训练轮数：5-10 epochs
+目标：最大化领域准确率
+
+为了降低数据准备难度。支持混合采样数据。
+1.tools/datasets_utils.py 可以生成符合要求的scp文件
+2.生成nano输入特征jsonl文件
+**linux**
+```python
+ uv run tools/scp2jsonl.py \
+  ++scp_file=data/train_wav.scp \
+  ++transcript_file=data/train_text.txt \
+  ++jsonl_file=data/train_example.jsonl
+```
+**win**
+```bash
+uv run tools/scp2jsonl.py ++scp_file=data/domain/train/wav.scp ++transcript_file=data/domain/train/wav.txt ++jsonl_file=data/domain/train/wav.jsonl
+```
+
+##  3.使用prepare_staged_data.py混合数据集
+
+运行数据准备
+```python
+uv run prepare_staged_data.py \
+  --general_train data/general/train.jsonl \
+  --general_val data/general/val.jsonl \
+  --domain_train data/domain/train.jsonl \
+  --domain_val data/domain/val.jsonl \
+  --output_dir data/staged
+```
+  
+```bash
+# 输出结果：
+# data/staged/
+# ├── stage1/
+# │   ├── train.jsonl (混合50/50)
+# │   └── val.jsonl
+# ├── stage2/
+# │   ├── train.jsonl (混合20/80)
+# │   └── val.jsonl
+# └── stage3/
+#     ├── train.jsonl (纯专业)
+#     └── val.jsonl
+```
+
+
+## 4.微调finetune_stage.sh参数
+
+```
+# 预训练模型路径
+model_name_or_model_dir="models/Fun-ASR-Nano-2512"
+
+# 全程冻结encoder
+FREEZE_PARAMS="
+++audio_encoder_conf.freeze=true \
+++audio_adaptor_conf.freeze=false \
+++llm_conf.freeze=true
+```
+
+- model_name_or_model_dir 模型路径
+- audio_encoder_conf  声学编码器,true冻结
+- audio_adaptor_conf 声学适配层,false不冻结
+- llm_conf 高层语义模块,true冻结
+
+## 5.一键训练
+
+```bash
+nohup bash auto_finuetune.sh > full_train.log 2>&1 &
+```

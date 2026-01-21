@@ -2,26 +2,6 @@
 """
 为三阶段训练准备混合数据
 生成的是索引文件，不复制音频，节省空间
-
-# 运行数据准备
-python prepare_staged_data.py \
-  --general_train data/general/train.jsonl \
-  --general_val data/general/val.jsonl \
-  --domain_train data/domain/train.jsonl \
-  --domain_val data/domain/val.jsonl \
-  --output_dir data/staged
-  
-# 输出结果：
-# data/staged/
-# ├── stage1/
-# │   ├── train.jsonl (混合50/50)
-# │   └── val.jsonl
-# ├── stage2/
-# │   ├── train.jsonl (混合20/80)
-# │   └── val.jsonl
-# └── stage3/
-#     ├── train.jsonl (纯专业)
-#     └── val.jsonl
 """
 
 import json

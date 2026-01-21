@@ -1,5 +1,5 @@
 #!/bin/bash
-# train_progressive.sh - 适配预混合数据的版本
+# finetune_stage.sh - 适配预混合数据的版本
 
 workspace=`pwd`
 
@@ -131,14 +131,15 @@ if [ $? -eq 0 ]; then
     
     if [ ${STAGE} -eq 1 ]; then
         echo ""
-        echo "Next: bash train_progressive.sh 2"
+        echo "Next: Stage 2"
     elif [ ${STAGE} -eq 2 ]; then
         echo ""
-        echo "Next: bash train_progressive.sh 3"
+        echo "Next: Stage 3"
     else
         echo ""
         echo "All stages completed!"
     fi
+    exit 0
 else
     echo "✗ Stage ${STAGE} failed. Check: ${log_file}"
     exit 1

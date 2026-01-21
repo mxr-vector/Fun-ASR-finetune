@@ -1,39 +1,30 @@
 #!/bin/bash
-# finetune_stage.sh - 一键运行全部三阶段训练
-# nohup bash auto_finuetune.sh > full_train.log 2>&1 &
+# auto_finetune.sh - 一键运行全部三阶段训练
+# Usage: nohup bash auto_finetune.sh > full_train.log 2>&1 &
 
-set -e  # 任何错误立即停止
+set -e  # 遇错即停
+
+# 错误处理函数
+trap 'echo "❌ Stage $stage failed! Check logs."; exit 1' ERR
 
 echo "========================================="
 echo "Starting Full 3-Stage Training Pipeline"
 echo "========================================="
 
-# 阶段1
-echo ""
-echo "[1/3] Starting Stage 1: Warmup..."
-bash finetune_stage.sh 1
-if [ $? -ne 0 ]; then
-    echo "Stage 1 failed!"
-    exit 1
-fi
-
-# 阶段2
-echo ""
-echo "[2/3] Starting Stage 2: Adaptation..."
-bash finetune_stage.sh 2
-if [ $? -ne 0 ]; then
-    echo "Stage 2 failed!"
-    exit 1
-fi
-
-# 阶段3
-echo ""
-echo "[3/3] Starting Stage 3: Fine-tuning..."
-bash finetune_stage.sh 3
-if [ $? -ne 0 ]; then
-    echo "Stage 3 failed!"
-    exit 1
-fi
+# 循环执行三个阶段
+for stage in 1 2 3; do
+    stage_names=("Warmup" "Adaptation" "Fine-tuning")
+    echo ""
+    echo "[$stage/3] Starting Stage $stage: ${stage_names[$stage-1]}..."
+    
+    if bash finetune_stage.sh $stage; then
+        echo "✓ Stage $stage completed successfully!"
+    else
+        echo "❌ Stage $stage failed!"
+        echo "Check log: ./outputs/stage${stage}_*/log.txt"
+        exit 1
+    fi
+done
 
 echo ""
 echo "========================================="

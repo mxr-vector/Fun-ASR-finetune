@@ -14,3 +14,18 @@ dependencies = [
     "whisper-normalizer>=0.1.12",
     "zhconv>=1.4.3",
 ]
+
+
+# 官方 PyPI 镜像（默认国内源可选）
+[[tool.uv.index]]
+name = "internal-proxy"
+url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple/"
+default = true
+
+[[tool.uv.index]]
+name = "aliyun"
+url = "https://mirrors.aliyun.com/pypi/simple/"
+
+[[tool.uv.index]]
+name = "huawei"
+url = "https://mirrors.huaweicloud.com/repository/pypi/simple"

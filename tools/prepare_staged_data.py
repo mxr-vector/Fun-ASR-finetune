@@ -140,9 +140,7 @@ def main():
     print("=" * 60)
     print(f"\nOutput directory: {args.output_dir}")
     print("\nNext steps:")
-    print("  1. bash train_progressive.sh 1")
-    print("  2. bash train_progressive.sh 2")
-    print("  3. bash train_progressive.sh 3")
+    print("  bash auto_finetune.sh")
 
 
 if __name__ == "__main__":

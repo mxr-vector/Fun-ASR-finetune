@@ -1,0 +1,145 @@
+#!/bin/bash
+# train_progressive.sh - 适配预混合数据的版本
+
+workspace=`pwd`
+
+STAGE=${1:-1}
+
+echo "========================================"
+echo "Training Stage: ${STAGE}"
+echo "========================================"
+
+export CUDA_VISIBLE_DEVICES="0"
+gpu_num=$(echo $CUDA_VISIBLE_DEVICES | awk -F "," '{print NF}')
+
+# 预训练模型路径
+model_name_or_model_dir="models/Fun-ASR-Nano-2512"
+
+# ============ 修改：直接指向预混合的数据 ============
+data_dir="${workspace}/data/staged"
+
+# 写死的检查点路径
+stage1_best_model="./outputs/stage1_warmup/valid.acc.best.pth"
+stage2_best_model="./outputs/stage2_adaptation/valid.acc.best.pth"
+
+# 根据阶段配置
+case ${STAGE} in
+    1)
+        echo "Stage 1: Warmup (50% general + 50% domain)"
+        train_data="${data_dir}/stage1/train.jsonl"
+        val_data="${data_dir}/stage1/val.jsonl"
+        max_epoch=10
+        learning_rate=0.0002
+        output_dir="./outputs/stage1_warmup"
+        MODEL_INIT_PARAM="++model=${model_name_or_model_dir}"
+        ;;
+        
+    2)
+        echo "Stage 2: Domain Adaptation (20% general + 80% domain)"
+        
+        if [ ! -f "${stage1_best_model}" ]; then
+            echo "ERROR: Stage 1 model not found: ${stage1_best_model}"
+            exit 1
+        fi
+        
+        train_data="${data_dir}/stage2/train.jsonl"
+        val_data="${data_dir}/stage2/val.jsonl"
+        max_epoch=20
+        learning_rate=0.0002
+        output_dir="./outputs/stage2_adaptation"
+        MODEL_INIT_PARAM="++init_param=${stage1_best_model}"
+        ;;
+        
+    3)
+        echo "Stage 3: Fine-tuning (100% domain)"
+        
+        if [ ! -f "${stage2_best_model}" ]; then
+            echo "ERROR: Stage 2 model not found: ${stage2_best_model}"
+            exit 1
+        fi
+        
+        train_data="${data_dir}/stage3/train.jsonl"
+        val_data="${data_dir}/stage3/val.jsonl"
+        max_epoch=10
+        learning_rate=0.00005  # 降低学习率
+        output_dir="./outputs/stage3_finetune"
+        MODEL_INIT_PARAM="++init_param=${stage2_best_model}"
+        ;;
+        
+    *)
+        echo "ERROR: Invalid stage ${STAGE}"
+        exit 1
+        ;;
+esac
+
+# 全程冻结encoder
+FREEZE_PARAMS="
+++audio_encoder_conf.freeze=true \
+++audio_adaptor_conf.freeze=false \
+++llm_conf.freeze=true
+"
+
+log_file="${output_dir}/log.txt"
+deepspeed_config=${workspace}/deepspeed_conf/ds_stage1.json
+
+mkdir -p ${output_dir}
+echo "Data: ${train_data}"
+echo "Output: ${output_dir}"
+echo "Log: ${log_file}"
+
+DISTRIBUTED_ARGS="
+    --nnodes ${WORLD_SIZE:-1} \
+    --nproc_per_node $gpu_num \
+    --node_rank ${RANK:-0} \
+    --master_addr ${MASTER_ADDR:-127.0.0.1} \
+    --master_port ${MASTER_PORT:-26669}
+"
+
+train_tool=`which funasr-train-ds`
+
+# ============ 训练命令 ============
+torchrun $DISTRIBUTED_ARGS \
+${train_tool} \
+${MODEL_INIT_PARAM} \
+++trust_remote_code=true \
+++train_data_set_list="${train_data}" \
+++valid_data_set_list="${val_data}" \
+++dataset_conf.data_split_num=1 \
+++dataset_conf.batch_sampler="BatchSampler" \
+++dataset_conf.batch_size=6000 \
+++dataset_conf.sort_size=1024 \
+++dataset_conf.batch_type="token" \
+++dataset_conf.num_workers=4 \
+++dataset_conf.shuffle=true \
+++train_conf.max_epoch=${max_epoch} \
+++train_conf.log_interval=1 \
+++train_conf.resume=true \
+++train_conf.validate_interval=2000 \
+++train_conf.save_checkpoint_interval=2000 \
+++train_conf.keep_nbest_models=20 \
+++train_conf.avg_nbest_model=10 \
+++train_conf.use_deepspeed=false \
+++train_conf.deepspeed_config=${deepspeed_config} \
+++optim_conf.lr=${learning_rate} \
+${FREEZE_PARAMS} \
+++output_dir="${output_dir}" &> ${log_file}
+
+# 训练完成
+if [ $? -eq 0 ]; then
+    echo "✓ Stage ${STAGE} completed successfully!"
+    echo "  Model: ${output_dir}/valid.acc.best.pth"
+    
+    if [ ${STAGE} -eq 1 ]; then
+        echo ""
+        echo "Next: bash train_progressive.sh 2"
+    elif [ ${STAGE} -eq 2 ]; then
+        echo ""
+        echo "Next: bash train_progressive.sh 3"
+    else
+        echo ""
+        echo "All stages completed!"
+    fi
+else
+    echo "✗ Stage ${STAGE} failed. Check: ${log_file}"
+    exit 1
+fi

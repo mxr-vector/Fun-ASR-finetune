@@ -185,7 +185,7 @@ def _build_whisper_entity(
         "duration": duration,
     }
 
-# 获取WAV文件时长
+# 获取单个WAV文件时长
 def _get_wav_duration(file_path: str) -> Optional[float]:
     """
     获取WAV文件时长（秒），支持异常处理
@@ -211,6 +211,21 @@ def _get_wav_duration(file_path: str) -> Optional[float]:
     except Exception as e:
         logging.warning(f"获取音频时长失败: {str(e)}")
         return None
+
+
+def get_total_wav_duration(wav_dir: str) -> float:
+    import soundfile as sf
+    total_seconds = 0.0
+
+    for root, _, files in os.walk(wav_dir):
+        for file in files:
+            if file.lower().endswith(".wav"):
+                path = os.path.join(root, file)
+                info = sf.info(path)
+                total_seconds += info.frames / info.samplerate
+
+    return total_seconds
+
 
 # 批量写入JSON数组
 def write_batch(output_path: str, data_list: List[Dict], append: bool = False) -> None:
@@ -359,15 +374,18 @@ def excel2jsonl(
                 continue
 
     logging.info(f"已写入 {written} 条 Whisper JSONL 记录 到 {output_jsonl}")
-    
+
 if __name__ == "__main__":
     # 生成scp文件
-    input_txt_path = r"D:\训练音频\语音\zh\TWRGCN_83238.txt"
-    generate_wav_scp(
-        input_txt_path,
-        output_scp_path=str(Path(input_txt_path).with_suffix(".scp")),
-        audio_prefix=r"/funasr-nano/data/train/wav",
-    )
+    # input_txt_path = r"D:\训练音频\语音\zh\TWRGCN_83238.txt"
+    # generate_wav_scp(
+    #     input_txt_path,
+    #     output_scp_path=str(Path(input_txt_path).with_suffix(".scp")),
+    #     audio_prefix=r"/funasr-nano/data/train/wav",
+    # )
+
+    input_dir = r"data/zh"
+    print(get_total_wav_duration(input_dir))
 
     # JSONL转Whisper数据集
     try:

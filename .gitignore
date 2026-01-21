@@ -2,7 +2,7 @@
 __pycache__/
 build/
 dist/
-data/zh
+data/
 log/
 test*.py
 dataset/

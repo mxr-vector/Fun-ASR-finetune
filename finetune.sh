@@ -11,8 +11,8 @@ gpu_num=$(echo $CUDA_VISIBLE_DEVICES | awk -F "," '{print NF}')
 model_name_or_model_dir="FunAudioLLM/Fun-ASR-Nano-2512"
 
 # data dir, which contains: train.json, val.json
-train_data=${workspace}/data/train_example.jsonl
-val_data=${workspace}/data/val_example.jsonl
+train_data=${workspace}/data/zh/train/wav.jsonl
+val_data=${workspace}/data/zh/valid/wav.jsonl
 
 # exp output dir
 output_dir="./outputs"
@@ -60,6 +60,6 @@ ${train_tool} \
 ++train_conf.deepspeed_config=${deepspeed_config} \
 ++optim_conf.lr=0.0002 \
 ++audio_encoder_conf.freeze=true \
-++audio_adaptor_conf.freeze=true \
-++llm_conf.freeze=false \
+++audio_adaptor_conf.freeze=false \
+++llm_conf.freeze=true \
 ++output_dir="${output_dir}" &> ${log_file}

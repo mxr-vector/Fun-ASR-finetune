@@ -140,7 +140,7 @@ def main():
     print("=" * 60)
     print(f"\nOutput directory: {args.output_dir}")
     print("\nNext steps:")
-    print("  bash auto_finetune.sh")
+    print("  nohup bash auto_finetune.sh > full_train.log 2>&1 &")
 
 
 if __name__ == "__main__":

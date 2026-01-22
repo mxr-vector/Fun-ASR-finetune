@@ -254,7 +254,7 @@ uv run tools/scp2jsonl.py ++scp_file=data/domain/train/wav.scp ++transcript_file
 运行数据准备
 
 ```bash
-uv run prepare_staged_data.py \
+uv run tools/prepare_staged_data.py \
   --general_train data/general/train/wav.jsonl \
   --general_val data/general/valid/wav.jsonl \
   --domain_train data/domain/train/wav.jsonl \
@@ -275,6 +275,8 @@ uv run prepare_staged_data.py \
 #     ├── train.jsonl (纯专业)
 #     └── val.jsonl
 ```
+
+![img3](resource/image3.png)
 
 ## 4.微调finetune_stage.sh参数
 

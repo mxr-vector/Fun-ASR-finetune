@@ -194,24 +194,6 @@ if __name__ == "__main__":
 <img src="images/compare_zh.png" width="800" />
 </div>
 
-## 优秀三方工作
-
-- vLLM (GPU) 最佳部署实践: 使用 vLLM 实现对 Fun-ASR 的加速. [Repository](https://github.com/yuekaizhang/Fun-ASR-vllm)
-
-## Citations
-
-```bibtex
-@misc{an2025funasrtechnicalreport,
-      title={Fun-ASR Technical Report},
-      author={Keyu An and Yanni Chen and Zhigao Chen and Chong Deng and Zhihao Du and Changfeng Gao and Zhifu Gao and Bo Gong and Xiangang Li and Yabin Li and Ying Liu and Xiang Lv and Yunjie Ji and Yiheng Jiang and Bin Ma and Haoneng Luo and Chongjia Ni and Zexu Pan and Yiping Peng and Zhendong Peng and Peiyao Wang and Hao Wang and Haoxu Wang and Wen Wang and Wupeng Wang and Yuzhong Wu and Biao Tian and Zhentao Tan and Nan Yang and Bin Yuan and Jieping Ye and Jixing Yu and Qinglin Zhang and Kun Zou and Han Zhao and Shengkui Zhao and Jingren Zhou and Yanqiao Zhu},
-      year={2025},
-      eprint={2509.12508},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2509.12508},
-}
-```
-
 ## 分阶段混合训练
 
 参考官网：https://gitee.com/WangJiaHui202144/funasr-nano/blob/main/docs/fintune_zh.md
@@ -238,15 +220,27 @@ G74916-G83238 test集
 目标：最大化领域准确率
 
 为了降低数据准备难度。支持混合采样数据。
-1.tools/datasets_utils.py 可以生成符合要求的scp文件2.生成nano输入特征jsonl文件
+
+1.生成符合要求的scp文件
+`tools/datasets_utils.py`工具类具备大多数文件转换，包括将txt转为scp，json转jsonl，excel转jsonl等情况。覆盖whisper和funasr输入特征。使用此类工具建议按照如下结构进行wav和txt数据准备，使用该工具类生成scp
+
+![img1](resource/image.png)
+
+![img2](resource/image2.png)
+
+```bash
+uv run tools/datasets_utils.py
+```
+
+2.生成nano输入特征jsonl文件
 
 **linux**
 
 ```bash
  uv run tools/scp2jsonl.py \
-  ++scp_file=data/train_wav.scp \
-  ++transcript_file=data/train_text.txt \
-  ++jsonl_file=data/train_example.jsonl
+  ++scp_file=data/domain/train/wav.scp \
+  ++transcript_file=data/domain/train/wav.txt \
+  ++jsonl_file=data/domain/train/wav.jsonl
 ```
 
 **win**
@@ -304,4 +298,22 @@ FREEZE_PARAMS="
 
 ```bash
 nohup bash auto_finuetune.sh > full_train.log 2>&1 &
+```
+
+## 优秀三方工作
+
+- vLLM (GPU) 最佳部署实践: 使用 vLLM 实现对 Fun-ASR 的加速. [Repository](https://github.com/yuekaizhang/Fun-ASR-vllm)
+
+## Citations
+
+```bibtex
+@misc{an2025funasrtechnicalreport,
+      title={Fun-ASR Technical Report},
+      author={Keyu An and Yanni Chen and Zhigao Chen and Chong Deng and Zhihao Du and Changfeng Gao and Zhifu Gao and Bo Gong and Xiangang Li and Yabin Li and Ying Liu and Xiang Lv and Yunjie Ji and Yiheng Jiang and Bin Ma and Haoneng Luo and Chongjia Ni and Zexu Pan and Yiping Peng and Zhendong Peng and Peiyao Wang and Hao Wang and Haoxu Wang and Wen Wang and Wupeng Wang and Yuzhong Wu and Biao Tian and Zhentao Tan and Nan Yang and Bin Yuan and Jieping Ye and Jixing Yu and Qinglin Zhang and Kun Zou and Han Zhao and Shengkui Zhao and Jingren Zhou and Yanqiao Zhu},
+      year={2025},
+      eprint={2509.12508},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2509.12508},
+}
 ```

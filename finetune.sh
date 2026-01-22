@@ -11,8 +11,8 @@ gpu_num=$(echo $CUDA_VISIBLE_DEVICES | awk -F "," '{print NF}')
 model_name_or_model_dir="FunAudioLLM/Fun-ASR-Nano-2512"
 
 # data dir, which contains: train.json, val.json
-train_data=${workspace}/data/zh/train/wav.jsonl
-val_data=${workspace}/data/zh/valid/wav.jsonl
+train_data=${workspace}/data/domain/train/wav.jsonl
+val_data=${workspace}/data/domain/valid/wav.jsonl
 
 # exp output dir
 output_dir="./outputs"

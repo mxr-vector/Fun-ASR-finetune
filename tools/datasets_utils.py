@@ -185,6 +185,7 @@ def _build_whisper_entity(
         "duration": duration,
     }
 
+
 # 获取单个WAV文件时长
 def _get_wav_duration(file_path: str) -> Optional[float]:
     """
@@ -215,6 +216,7 @@ def _get_wav_duration(file_path: str) -> Optional[float]:
 
 def get_total_wav_duration(wav_dir: str) -> float:
     import soundfile as sf
+
     total_seconds = 0.0
 
     for root, _, files in os.walk(wav_dir):
@@ -244,7 +246,11 @@ def write_batch(output_path: str, data_list: List[Dict], append: bool = False) -
     batch_text = ",\n".join(items)
 
     # 如果不追加或文件不存在/为空，则直接写入完整数组
-    if not append or not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+    if (
+        not append
+        or not os.path.exists(output_path)
+        or os.path.getsize(output_path) == 0
+    ):
         with open(output_path, "w", encoding="utf-8") as f:
             f.write("[\n")
             f.write(batch_text)
@@ -279,6 +285,7 @@ def write_batch(output_path: str, data_list: List[Dict], append: bool = False) -
         f.write(new_content)
         f.truncate()
 
+
 # json压缩
 def json_compress(input_json: str, output_json: str) -> None:
     """将JSON文件压缩为单行格式，节省空间"""
@@ -286,6 +293,7 @@ def json_compress(input_json: str, output_json: str) -> None:
         data = json.load(f_in)
     with open(output_json, "w", encoding="utf-8") as f_out:
         json.dump(data, f_out, ensure_ascii=False, separators=(",", ":"))
+
 
 # json转jsonl
 def json2jsonl(input_json: str, output_jsonl: str) -> None:
@@ -295,6 +303,7 @@ def json2jsonl(input_json: str, output_jsonl: str) -> None:
     with open(output_jsonl, "w", encoding="utf-8") as f_out:
         for item in data:
             f_out.write(json.dumps(item, ensure_ascii=False) + "\n")
+
 
 # excel转jsonl
 def excel2jsonl(
@@ -349,11 +358,15 @@ def excel2jsonl(
                         # 若 src 包含路径但不是绝对路径，先尝试相对于前缀
                         if not src_path.is_absolute():
                             candidate = Path(audio_path_prefix).resolve() / src_path
-                            audio_path = candidate if candidate.exists() else src_path.resolve()
+                            audio_path = (
+                                candidate if candidate.exists() else src_path.resolve()
+                            )
                         else:
                             audio_path = src_path
                 else:
-                    audio_path = src_path if src_path.is_absolute() else src_path.resolve()
+                    audio_path = (
+                        src_path if src_path.is_absolute() else src_path.resolve()
+                    )
 
                 if not audio_path.exists():
                     logging.warning(f"第{idx+1}行音频文件不存在: {audio_path}，跳过")
@@ -365,7 +378,9 @@ def excel2jsonl(
                     continue
 
                 # 构建并写入 Whisper 格式实体（audio.path 使用绝对路径）
-                entity = _build_whisper_entity(str(audio_path), sentence, language, duration)
+                entity = _build_whisper_entity(
+                    str(audio_path), sentence, language, duration
+                )
                 f_out.write(json.dumps(entity, ensure_ascii=False) + "\n")
                 written += 1
 
@@ -375,18 +390,91 @@ def excel2jsonl(
 
     logging.info(f"已写入 {written} 条 Whisper JSONL 记录 到 {output_jsonl}")
 
+
+# csv转text
+def csv2text(csv_file: str):
+    import csv
+
+    # 获取 CSV 文件所在目录和文件名（不含后缀）
+    dir_name = os.path.dirname(csv_file)
+    base_name = os.path.splitext(os.path.basename(csv_file))[0]
+    # 构造 TXT 文件路径
+    txt_file = os.path.join(dir_name, base_name + ".txt")
+    # 转换 CSV → TXT
+    with (
+        open(csv_file, "r", encoding="utf-8") as f_in,
+        open(txt_file, "w", encoding="utf-8") as f_out,
+    ):
+        next(f_in)  # 跳过表头
+        for line in f_in:
+            line = line.strip()
+            if line:
+                file_path, text = line.split(",", 1)
+                file_name = file_path.split("/")[-1]  # 取最后一个 / 之后的文件名
+                f_out.write(f"{file_name} {text}\n")
+
+    print(f"转换完成，TXT 文件路径：{txt_file}")
+
+
+# 把子目录文件内容，提到顶级父目录下
+def flatten_subdirs_to_root(root_dir: str, remove_empty_dirs: bool = True):
+    """
+    遍历 root_dir 下的所有子目录，把文件移动到顶层目录。
+
+    参数:
+    - root_dir: 顶层父目录路径
+    - remove_empty_dirs: 是否删除移动后空的子目录，默认 True
+    """
+    import shutil
+
+    root_dir = os.path.abspath(root_dir)  # 转绝对路径
+
+    # 遍历所有子目录
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        if dirpath == root_dir:
+            continue  # 跳过顶层目录
+        for file in filenames:
+            src_path = os.path.join(dirpath, file)
+            dst_path = os.path.join(root_dir, file)
+
+            # 避免同名文件覆盖
+            if os.path.exists(dst_path):
+                base, ext = os.path.splitext(file)
+                count = 1
+                while True:
+                    new_name = f"{base}_{count}{ext}"
+                    dst_path = os.path.join(root_dir, new_name)
+                    if not os.path.exists(dst_path):
+                        break
+                    count += 1
+
+            shutil.move(src_path, dst_path)
+
+    # 删除空子目录
+    if remove_empty_dirs:
+        for dirpath, dirnames, filenames in os.walk(root_dir, topdown=False):
+            if dirpath != root_dir and not os.listdir(dirpath):
+                os.rmdir(dirpath)
+
+    print(f"文件已全部提取到顶层目录: {root_dir}")
+
+
 if __name__ == "__main__":
+
+    # input_dir = r"D:\训练音频\语音\AliMeeting\Train_Ali_far\audio_dir"
+    # print(get_total_wav_duration(input_dir))
+
+    # csv2text("data/speech_asr_aishell_trainsets.csv")
+
     # 生成scp文件
-    # input_txt_path = r"D:\训练音频\语音\zh\TWRGCN_83238.txt"
-    # generate_wav_scp(
-    #     input_txt_path,
-    #     output_scp_path=str(Path(input_txt_path).with_suffix(".scp")),
-    #     audio_prefix=r"/funasr-nano/data/train/wav",
-    # )
+    input_txt_path = r"data/general/test/wav.txt"
+    generate_wav_scp(
+        input_txt_path,
+        output_scp_path=str(Path(input_txt_path).with_suffix(".scp")),
+        audio_prefix=r"data/general/test/wav",
+    )
 
-    input_dir = r"data/zh"
-    print(get_total_wav_duration(input_dir))
-
+    # flatten_subdirs_to_root(r"data/general/train/wav")
     # JSONL转Whisper数据集
     try:
         input = r"E:\work\demo\mxr-ai-model-base\train_model\datasets\train_en\train\dataset.json"

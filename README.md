@@ -195,24 +195,6 @@ We evaluated Fun-ASR against other state-of-the-art models on open-source benchm
 <img src="images/compare_en.png" width="800" />
 </div>
 
-## Remarkable Third-Party Work
-
-- vLLM (GPU) Deployment Best Practices: An accelerated implementation of Fun-ASR using vLLM. [Repository](https://github.com/yuekaizhang/Fun-ASR-vllm)
-
-## Citations
-
-```bibtex
-@misc{an2025funasrtechnicalreport,
-      title={Fun-ASR Technical Report},
-      author={Keyu An and Yanni Chen and Zhigao Chen and Chong Deng and Zhihao Du and Changfeng Gao and Zhifu Gao and Bo Gong and Xiangang Li and Yabin Li and Ying Liu and Xiang Lv and Yunjie Ji and Yiheng Jiang and Bin Ma and Haoneng Luo and Chongjia Ni and Zexu Pan and Yiping Peng and Zhendong Peng and Peiyao Wang and Hao Wang and Haoxu Wang and Wen Wang and Wupeng Wang and Yuzhong Wu and Biao Tian and Zhentao Tan and Nan Yang and Bin Yuan and Jieping Ye and Jixing Yu and Qinglin Zhang and Kun Zou and Han Zhao and Shengkui Zhao and Jingren Zhou and Yanqiao Zhu},
-      year={2025},
-      eprint={2509.12508},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2509.12508},
-}
-```
-
 ## Phased Mixed Training
 
 Refer to the official website：https://gitee.com/WangJiaHui202144/funasr-nano/blob/main/docs/fintune_zh.md
@@ -240,16 +222,27 @@ the WenetSpeech dataset, which aligns with the business scenario, was utilized. 
 
 To reduce data preparation complexity, support for mixed-sample data is provided.
 
-1. tools/datasets_utils.py can generate SCP files that meet requirements
+1. Generate an SCP file that meets the requirements.
+
+`tools/datasets_utils.py`This utility class supports most file conversions, including converting TXT to SCP, JSON to JSONL, Excel to JSONL, and more. It covers Whisper and Funasr input features. When using this utility class, it is recommended to prepare WAV and TXT data according to the following structure and use this utility class to generate SCP files.
+
+![img1](resource/image.png)
+
+![img2](resource/image2.png)
+
+```bash
+uv run tools/datasets_utils.py
+```
+
 2. Generate JSONL files for input features in Nano format
 
 **linux**
 
 ```bash
  uv run tools/scp2jsonl.py \
-  ++scp_file=data/train_wav.scp \
-  ++transcript_file=data/train_text.txt \
-  ++jsonl_file=data/train_example.jsonl
+  ++scp_file=data/domain/train/wav.scp \
+  ++transcript_file=data/domain/train/wav.txt \
+  ++jsonl_file=data/domain/train/wav.jsonl
 ```
 
 **win**
@@ -309,4 +302,22 @@ FREEZE_PARAMS="
 
 ```bash
 nohup bash auto_finuetune.sh > full_train.log 2>&1 &
+```
+
+## Remarkable Third-Party Work
+
+- vLLM (GPU) Deployment Best Practices: An accelerated implementation of Fun-ASR using vLLM. [Repository](https://github.com/yuekaizhang/Fun-ASR-vllm)
+
+## Citations
+
+```bibtex
+@misc{an2025funasrtechnicalreport,
+      title={Fun-ASR Technical Report},
+      author={Keyu An and Yanni Chen and Zhigao Chen and Chong Deng and Zhihao Du and Changfeng Gao and Zhifu Gao and Bo Gong and Xiangang Li and Yabin Li and Ying Liu and Xiang Lv and Yunjie Ji and Yiheng Jiang and Bin Ma and Haoneng Luo and Chongjia Ni and Zexu Pan and Yiping Peng and Zhendong Peng and Peiyao Wang and Hao Wang and Haoxu Wang and Wen Wang and Wupeng Wang and Yuzhong Wu and Biao Tian and Zhentao Tan and Nan Yang and Bin Yuan and Jieping Ye and Jixing Yu and Qinglin Zhang and Kun Zou and Han Zhao and Shengkui Zhao and Jingren Zhou and Yanqiao Zhu},
+      year={2025},
+      eprint={2509.12508},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2509.12508},
+}
 ```

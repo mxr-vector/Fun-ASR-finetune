@@ -9,7 +9,7 @@ echo "========================================"
 echo "Training Stage: ${STAGE}"
 echo "========================================"
 
-export CUDA_VISIBLE_DEVICES="0"
+export CUDA_VISIBLE_DEVICES="0,1,2,3"
 gpu_num=$(echo $CUDA_VISIBLE_DEVICES | awk -F "," '{print NF}')
 
 # 预训练模型路径
@@ -32,6 +32,12 @@ case ${STAGE} in
         learning_rate=0.0002
         output_dir="./outputs/stage1_warmup"
         MODEL_INIT_PARAM="++model=${model_name_or_model_dir}"
+        # Stage 1: 冻结encoder和LLM
+        FREEZE_PARAMS="
+++audio_encoder_conf.freeze=true \
+++audio_adaptor_conf.freeze=false \
+++llm_conf.freeze=true
+"
         ;;
         
     2)
@@ -48,6 +54,12 @@ case ${STAGE} in
         learning_rate=0.0002
         output_dir="./outputs/stage2_adaptation"
         MODEL_INIT_PARAM="++init_param=${stage1_best_model}"
+        # Stage 2: 冻结encoder和LLM
+        FREEZE_PARAMS="
+++audio_encoder_conf.freeze=true \
+++audio_adaptor_conf.freeze=false \
+++llm_conf.freeze=true
+"
         ;;
         
     3)
@@ -64,6 +76,12 @@ case ${STAGE} in
         learning_rate=0.00005  # 降低学习率
         output_dir="./outputs/stage3_finetune"
         MODEL_INIT_PARAM="++init_param=${stage2_best_model}"
+        # Stage 3: 只冻结encoder，解冻LLM和adaptor
+        FREEZE_PARAMS="
+++audio_encoder_conf.freeze=true \
+++audio_adaptor_conf.freeze=false \
+++llm_conf.freeze=false
+"
         ;;
         
     *)
@@ -71,13 +89,6 @@ case ${STAGE} in
         exit 1
         ;;
 esac
-
-# 全程冻结encoder
-FREEZE_PARAMS="
-++audio_encoder_conf.freeze=true \
-++audio_adaptor_conf.freeze=false \
-++llm_conf.freeze=true
-"
 
 log_file="${output_dir}/log.txt"
 deepspeed_config=${workspace}/deepspeed_conf/ds_stage1.json

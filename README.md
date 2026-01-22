@@ -1,5 +1,7 @@
 # Fun-ASR
 
+[TOC]
+
 「[简体中文](README_zh.md)」|「English」
 
 Fun-ASR is an end-to-end speech recognition large model launched by Tongyi Lab. It is trained on tens of millions of hours of real speech data, possessing powerful contextual understanding capabilities and industry adaptability. It supports low-latency real-time transcription and covers 31 languages. It excels in vertical domains such as education and finance, accurately recognizing professional terminology and industry expressions, effectively addressing challenges like "hallucination" generation and language confusion, achieving "clear hearing, understanding meaning, and accurate writing."
@@ -222,7 +224,7 @@ the WenetSpeech dataset, which aligns with the business scenario, was utilized. 
 
 To reduce data preparation complexity, support for mixed-sample data is provided.
 
-1. Generate an SCP file that meets the requirements.
+### 1. Generate an SCP file that meets the requirements.
 
 `tools/datasets_utils.py`This utility class supports most file conversions, including converting TXT to SCP, JSON to JSONL, Excel to JSONL, and more. It covers Whisper and Funasr input features. When using this utility class, it is recommended to prepare WAV and TXT data according to the following structure and use this utility class to generate SCP files.
 
@@ -234,7 +236,7 @@ To reduce data preparation complexity, support for mixed-sample data is provided
 uv run tools/datasets_utils.py
 ```
 
-2. Generate JSONL files for input features in Nano format
+### 2. Generate JSONL files for input features in Nano format
 
 **linux**
 
@@ -251,7 +253,7 @@ uv run tools/datasets_utils.py
 uv run tools/scp2jsonl.py ++scp_file=data/domain/train/wav.scp ++transcript_file=data/domain/train/wav.txt ++jsonl_file=data/domain/train/wav.jsonl
 ```
 
-## 3.Use prepare_staged_data.py to blend datasets
+### 3.Use prepare_staged_data.py to blend datasets
 
 Operational Data Preparation
 
@@ -280,7 +282,7 @@ uv run tools/prepare_staged_data.py \
 
 ![img3](resource/image3.png)
 
-## 4.Fine-tune the parameters in finetune_stage.sh
+### 4.Fine-tune the parameters in finetune_stage.sh
 
 ```bash
 # Pre-trained Model Path
@@ -300,11 +302,45 @@ FREEZE_PARAMS="
 | audio_adaptor_conf      | Acoustic Adaptation Layer, false (does not freeze) |
 | llm_conf                | High-Level Semantic Module, true freeze            |
 
-## 5.One-Click Training
+### 5.One-Click Training
 
 ```bash
-nohup bash auto_finuetune.sh > full_train.log 2>&1 &
+nohup bash auto_finetune.sh > full_train.log 2>&1 &
 ```
+
+## Docker Training
+
+This project is ready to run directly. However, since the server handles extensive AI training tasks, Docker must be employed to ensure environment isolation and internal network migration.
+Docker training containers are designed for single-use. Therefore, during training, it is imperative to properly back up and persist data volumes (including model weights, logs, and intermediate outputs). After training completes, recreate and launch a new container for model evaluation or inference. Never reuse the original training container. This approach adheres to the design principles of immutable infrastructure and single responsibility. It clearly separates training and evaluation phases, facilitates detection and management throughout the project lifecycle, reduces cognitive burden for users, and enhances system maintainability and reproducibility.
+
+```bash
+# build image
+docker build -t funasr-nano-finetune:Dockerfile .
+
+docker builder prune --filter "until=24h"
+
+mkdir nano-finetune
+mkdir $PWD/models $PWD/data  $PWD/outputs
+# copy model in local
+mv <model-path> $PWD/models
+
+# copy data in local
+mv <data-path> $PWD/data
+
+# start container
+docker run -it --network host --shm-size=32g \
+--gpus all \
+-v $PWD/data:/workspace/data \
+-v $PWD/models:/workspace/models \
+-v $PWD/outputs:/workspace/outputs \
+--restart=always \
+--name nano-finetune funasr-nano-finetune:Dockerfile /bin/bash
+
+# start train
+nohup bash auto_finetune.sh > full_train.log 2>&1 &
+```
+
+`shm-size`参数必须显式指定
 
 ## Remarkable Third-Party Work
 

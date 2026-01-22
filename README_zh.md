@@ -1,5 +1,7 @@
 # Fun-ASR
 
+[TOC]
+
 「简体中文」|「[English](README.md)」
 
 Fun-ASR 是通义实验室推出的端到端语音识别大模型，是基于数千万小时真实语音数据训练而成，具备强大的上下文理解能力与行业适应性，支持低延迟实时听写，并且覆盖 31 个语种。在教育、金融等垂直领域表现出色，能准确识别专业术语与行业表达，有效应对"幻觉"生成和语种混淆等挑战，实现"听得清、懂其意、写得准"。
@@ -221,7 +223,8 @@ G74916-G83238 test集
 
 为了降低数据准备难度。支持混合采样数据。
 
-1.生成符合要求的scp文件
+### 1.生成符合要求的scp文件
+
 `tools/datasets_utils.py`工具类具备大多数文件转换，包括将txt转为scp，json转jsonl，excel转jsonl等情况。覆盖whisper和funasr输入特征。使用此类工具建议按照如下结构进行wav和txt数据准备，使用该工具类生成scp
 
 ![img1](resource/image.png)
@@ -232,7 +235,7 @@ G74916-G83238 test集
 uv run tools/datasets_utils.py
 ```
 
-2.生成nano输入特征jsonl文件
+### 2.生成nano输入特征jsonl文件
 
 **linux**
 
@@ -249,7 +252,7 @@ uv run tools/datasets_utils.py
 uv run tools/scp2jsonl.py ++scp_file=data/domain/train/wav.scp ++transcript_file=data/domain/train/wav.txt ++jsonl_file=data/domain/train/wav.jsonl
 ```
 
-## 3.使用prepare_staged_data.py混合数据集
+### 3.使用prepare_staged_data.py混合数据集
 
 运行数据准备
 
@@ -278,7 +281,7 @@ uv run tools/prepare_staged_data.py \
 
 ![img3](resource/image3.png)
 
-## 4.微调finetune_stage.sh参数
+### 4.微调finetune_stage.sh参数
 
 ```bash
 # 预训练模型路径
@@ -296,11 +299,45 @@ FREEZE_PARAMS="
 - audio_adaptor_conf 声学适配层,false不冻结
 - llm_conf 高层语义模块,true冻结
 
-## 5.一键训练
+### 5.一键训练
 
 ```bash
-nohup bash auto_finuetune.sh > full_train.log 2>&1 &
+nohup bash auto_finetune.sh > full_train.log 2>&1 &
 ```
+
+## Docker训练
+
+本项目可以直接运行，但是我这里服务器跑的ai训练比较多，为了确保环境隔离/内网迁移。只能使用docker了
+Docker 训练容器被设计为一次性使用，因此在训练过程中请务必妥善备份并持久化数据卷（包括模型权重、日志及中间产物）。训练完成后，请重新创建并启动新的容器用于模型评估或推理，而不要复用原训练容器。这样做符合容器不可变（Immutable Infrastructure）和职责单一（Single Responsibility）的设计原则，有助于清晰区分训练与评估阶段，便于项目生命周期的检测与管理，同时降低使用者的心智负担，并提升系统的可维护性与可复现性。
+
+```bash
+# 构建镜像
+docker build -t funasr-nano-finetune:Dockerfile .
+
+docker builder prune --filter "until=24h"
+
+mkdir nano-finetune
+mkdir $PWD/models $PWD/data  $PWD/outputs
+# 拷贝模型到本地
+mv <模型地址> $PWD/models
+
+# 拷贝数据到本地
+mv <数据地址> $PWD/data
+
+# 启动
+docker run -it --network host --shm-size=32g \
+--gpus all \
+-v $PWD/data:/workspace/data \
+-v $PWD/models:/workspace/models \
+-v $PWD/outputs:/workspace/outputs \
+--restart=always \
+--name nano-finetune funasr-nano-finetune:Dockerfile /bin/bash
+
+# 开启训练
+nohup bash auto_finetune.sh > full_train.log 2>&1 &
+```
+
+`shm-size`参数必须显式指定
 
 ## 优秀三方工作
 

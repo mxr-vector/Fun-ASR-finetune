@@ -52,10 +52,10 @@ RUN uv sync --active
 COPY . .
 
 # 给 run.sh 可执行权限
-RUN chmod +x run.sh && mkdir -p logs
+RUN chmod +x auto_finetune.sh
 
 # uv 会创建 .venv，这里将其添加到 PATH
 ENV PATH="/workspace/.venv/bin:${PATH}"
 
-# 容器启动命令（替换成你的入口）
-CMD ["bash", "run.sh", "start"]
+# 不兜底
+CMD ["/bin/bash"]

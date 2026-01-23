@@ -327,12 +327,12 @@ docker cp nano-finetune:/workspace $PWD
 # 退出容器并删除临时容器
 docker rm -f nano-finetune
 
-mkdir $PWD/models $PWD/data  $PWD/outputs
+mkdir $PWD/workspace/models $PWD/workspace/data  $PWD/workspace/outputs
 # 拷贝模型到本地
-mv <模型地址> $PWD/models
+mv <模型地址> $PWD/workspace/models
 
 # 拷贝数据到本地
-mv <数据地址> $PWD/data
+mv <数据地址> $PWD/workspace/data
 
 # 启动
 docker run -it --network=host --shm-size=32g \

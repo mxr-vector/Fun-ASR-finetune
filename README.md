@@ -330,12 +330,12 @@ docker cp nano-finetune:/workspace $PWD
 # Exit the container and delete the temporary container
 docker rm -f nano-finetune
 
-mkdir $PWD/models $PWD/data  $PWD/outputs
+mkdir $PWD/workspace/models $PWD/workspace/data  $PWD/workspace/outputs
 # copy model in local
-mv <model-path> $PWD/models
+mv <model-path> $PWD/workspace/models
 
 # copy data in local
-mv <data-path> $PWD/data
+mv <data-path> $PWD/workspace/data
 
 # start container
 docker run -it --network host --shm-size=32g \

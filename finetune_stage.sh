@@ -9,8 +9,12 @@ echo "========================================"
 echo "Training Stage: ${STAGE}"
 echo "========================================"
 
-export CUDA_VISIBLE_DEVICES="0"
-gpu_num=$(echo $CUDA_VISIBLE_DEVICES | awk -F "," '{print NF}')
+if [ -n "$CUDA_VISIBLE_DEVICES" ]; then
+    gpu_num=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F',' '{print NF}')
+else
+    gpu_num=$(nvidia-smi -L | wc -l)
+fi
+echo "Using gpu_num = $gpu_num"
 
 # 预训练模型路径
 model_name_or_model_dir="models/Fun-ASR-Nano-2512"

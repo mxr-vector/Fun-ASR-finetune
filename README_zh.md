@@ -325,8 +325,8 @@ mv <模型地址> $PWD/models
 mv <数据地址> $PWD/data
 
 # 启动
-docker run -it --network host --shm-size=32g \
---gpus all \
+docker run -it --network=host --shm-size=32g \
+--gpus all --ipc=host \
 -v $PWD/data:/workspace/data \
 -v $PWD/models:/workspace/models \
 -v $PWD/outputs:/workspace/outputs \
@@ -336,8 +336,14 @@ docker run -it --network host --shm-size=32g \
 # 开启训练
 nohup bash auto_finetune.sh > full_train.log 2>&1 &
 ```
-
 `shm-size`参数必须显式指定
+
+## 多卡训练
+
+截止目前为止funasr-nano-2512您需要在模型配置中添加如下配置
+
+![多卡训练配置](resource/image4.png)
+
 
 ## 优秀三方工作
 

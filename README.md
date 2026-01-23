@@ -340,7 +340,13 @@ docker run -it --network host --shm-size=32g \
 nohup bash auto_finetune.sh > full_train.log 2>&1 &
 ```
 
-`shm-size`参数必须显式指定
+`shm-size` Parameters must be explicitly specified.
+
+## Multi-card training
+
+As of now, for funasr-nano-2512, you need to add the following configuration to your model settings:
+
+![Multi-card-training](resource/image4.png)
 
 ## Remarkable Third-Party Work
 

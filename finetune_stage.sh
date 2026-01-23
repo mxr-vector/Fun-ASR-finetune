@@ -23,8 +23,8 @@ model_name_or_model_dir="models/Fun-ASR-Nano-2512"
 data_dir="${workspace}/data/staged"
 
 # 写死的检查点路径
-stage1_best_model="./outputs/stage1_warmup/valid.acc.best.pth"
-stage2_best_model="./outputs/stage2_adaptation/valid.acc.best.pth"
+stage1_best_model="./outputs/stage1_warmup/model.pt.best"
+stage2_best_model="./outputs/stage2_adaptation/model.pt.best"
 
 # 根据阶段配置
 case ${STAGE} in
@@ -142,7 +142,7 @@ ${FREEZE_PARAMS} \
 # 训练完成
 if [ $? -eq 0 ]; then
     echo "✓ Stage ${STAGE} completed successfully!"
-    echo "  Model: ${output_dir}/valid.acc.best.pth"
+    echo "  Model: ${output_dir}/model.pt.best"
     
     if [ ${STAGE} -eq 1 ]; then
         echo ""

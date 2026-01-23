@@ -317,6 +317,16 @@ docker build -t funasr-nano-finetune:Dockerfile .
 docker builder prune --filter "until=24h"
 
 mkdir nano-finetune
+
+# 启动临时容器拷贝文件到本地
+docker run -it --name nano-finetune funasr-nano-finetune:Dockerfile /bin/bash
+
+# 开新终端 拷贝数据 拷贝一些你想自己调试的文件
+docker cp nano-finetune:/workspace $PWD
+
+# 退出容器并删除临时容器
+docker rm -f nano-finetune
+
 mkdir $PWD/models $PWD/data  $PWD/outputs
 # 拷贝模型到本地
 mv <模型地址> $PWD/models
@@ -327,18 +337,17 @@ mv <数据地址> $PWD/data
 # 启动
 docker run -it --network=host --shm-size=32g \
 --gpus all --cpus=12 \
--v $PWD/data:/workspace/data \
--v $PWD/models:/workspace/models \
--v $PWD/outputs:/workspace/outputs \
--v $PWD/finetune_stage.sh:/workspace/finetune_stage.sh \
---restart=always \
+-v $PWD/workspace:/workspace \
+--restart=on-failure \
 --name nano-finetune funasr-nano-finetune:Dockerfile /bin/bash
 
 # 开启训练
 nohup bash auto_finetune.sh > full_train.log 2>&1 &
 ```
+
 `shm-size`参数必须显式指定
 `cpus` 建议是显卡数的4倍。
+若你想修改训练脚本，请进入容器拷贝`workspace/finetune_stage.sh `文件。或者拷贝整个/workspace目录到宿主机
 
 ## 多卡训练
 
@@ -351,6 +360,7 @@ nohup bash auto_finetune.sh > full_train.log 2>&1 &
 ```bash
 uv run train_log_analyzer.py log.txt
 ```
+
 ![训练日志分析器1](resource/image5.png)
 
 ![训练日志分析器2](resource/image6.png)

@@ -320,6 +320,16 @@ docker build -t funasr-nano-finetune:Dockerfile .
 docker builder prune --filter "until=24h"
 
 mkdir nano-finetune
+
+# Launch a temporary container to copy files to the local machine.
+docker run -it --name nano-finetune funasr-nano-finetune:Dockerfile /bin/bash
+
+# Open a new terminal Copy the data Copy any files you wish to debug yourself
+docker cp nano-finetune:/workspace $PWD
+
+# Exit the container and delete the temporary container
+docker rm -f nano-finetune
+
 mkdir $PWD/models $PWD/data  $PWD/outputs
 # copy model in local
 mv <model-path> $PWD/models
@@ -330,11 +340,8 @@ mv <data-path> $PWD/data
 # start container
 docker run -it --network host --shm-size=32g \
 --gpus all --cpus=12 \
--v $PWD/data:/workspace/data \
--v $PWD/models:/workspace/models \
--v $PWD/outputs:/workspace/outputs \
--v $PWD/finetune_stage.sh:/workspace/finetune_stage.sh \
---restart=always \
+-v $PWD/workspace:/workspace \
+--restart=on-failure \
 --name nano-finetune funasr-nano-finetune:Dockerfile /bin/bash
 
 # start train

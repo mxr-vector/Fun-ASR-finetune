@@ -95,12 +95,23 @@ case ${STAGE} in
 esac
 
 log_file="${output_dir}/log.txt"
-deepspeed_config=${workspace}/deepspeed_conf/ds_stage1.json
 
-mkdir -p ${output_dir}
-echo "Data: ${train_data}"
-echo "Output: ${output_dir}"
-echo "Log: ${log_file}"
+# -------------------------
+# 判定同阶段续传， 不同阶段之间使用上一个阶段最好模型
+# -------------------------
+CURRENT_STAGE_CKPT="${output_dir}/model.pt"
+
+if [ -f "${CURRENT_STAGE_CKPT}" ]; then
+    echo ">> Found checkpoint: ${CURRENT_STAGE_CKPT}"
+    echo ">> Resume training from this stage"
+    INIT_PARAM="++model=${model_name_or_model_dir} ++init_param=${CURRENT_STAGE_CKPT}"
+    RESUME_PARAM="++train_conf.resume=true"
+else
+    echo ">> No checkpoint found in ${output_dir}"
+    echo ">> Init from previous stage model"
+    INIT_PARAM="++model=${model_name_or_model_dir} ${MODEL_INIT_PARAM}"
+    RESUME_PARAM="++train_conf.resume=false"
+fi
 
 DISTRIBUTED_ARGS="
     --nnodes ${WORLD_SIZE:-1} \
@@ -111,24 +122,34 @@ DISTRIBUTED_ARGS="
 "
 
 train_tool=`which funasr-train-ds`
+deepspeed_config=${workspace}/deepspeed_conf/ds_stage1.json
+
+
+echo "----------------------------------------"
+echo "Train data : ${train_data}"
+echo "Valid data : ${val_data}"
+echo "Output dir : ${output_dir}"
+echo "Resume     : ${RESUME_PARAM}"
+echo "Init param : ${INIT_PARAM}"
+echo "----------------------------------------"
 
 # ============ 训练命令 ============
 torchrun $DISTRIBUTED_ARGS \
 ${train_tool} \
-${MODEL_INIT_PARAM} \
+${INIT_PARAM} \
+${RESUME_PARAM} \
 ++trust_remote_code=true \
 ++train_data_set_list="${train_data}" \
 ++valid_data_set_list="${val_data}" \
 ++dataset_conf.data_split_num=1 \
 ++dataset_conf.batch_sampler="BatchSampler" \
+++dataset_conf.batch_type="token" \
 ++dataset_conf.batch_size=6000 \
 ++dataset_conf.sort_size=1024 \
-++dataset_conf.batch_type="token" \
 ++dataset_conf.num_workers=4 \
 ++dataset_conf.shuffle=true \
 ++train_conf.max_epoch=${max_epoch} \
 ++train_conf.log_interval=1 \
-++train_conf.resume=true \
 ++train_conf.validate_interval=2000 \
 ++train_conf.save_checkpoint_interval=2000 \
 ++train_conf.keep_nbest_models=20 \

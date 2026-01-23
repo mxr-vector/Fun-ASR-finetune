@@ -351,7 +351,9 @@ nohup bash auto_finetune.sh > full_train.log 2>&1 &
 ```bash
 uv run train_log_analyzer.py log.txt
 ```
-![训练日志分析器](resource/image5.png)
+![训练日志分析器1](resource/image5.png)
+
+![训练日志分析器2](resource/image6.png)
 
 ## 优秀三方工作
 

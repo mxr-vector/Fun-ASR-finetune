@@ -356,7 +356,9 @@ As of now, for funasr-nano-2512, you need to add the following configuration to 
 uv run train_log_analyzer.py log.txt
 ```
 
-![Training Log Analyzer](resource/image5.png)
+![Training Log Analyzer1](resource/image5.png)
+
+![Training Log Analyzer2](resource/image6.png)
 
 ## Remarkable Third-Party Work
 

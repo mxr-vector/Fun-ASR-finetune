@@ -326,10 +326,11 @@ mv <数据地址> $PWD/data
 
 # 启动
 docker run -it --network=host --shm-size=32g \
---gpus all --ipc=host \
+--gpus all --cpus=12 \
 -v $PWD/data:/workspace/data \
 -v $PWD/models:/workspace/models \
 -v $PWD/outputs:/workspace/outputs \
+-v $PWD/finetune_stage.sh:/workspace/finetune_stage.sh \
 --restart=always \
 --name nano-finetune funasr-nano-finetune:Dockerfile /bin/bash
 
@@ -337,6 +338,7 @@ docker run -it --network=host --shm-size=32g \
 nohup bash auto_finetune.sh > full_train.log 2>&1 &
 ```
 `shm-size`参数必须显式指定
+`cpus` 建议是显卡数的4倍。
 
 ## 多卡训练
 
@@ -344,6 +346,12 @@ nohup bash auto_finetune.sh > full_train.log 2>&1 &
 
 ![多卡训练配置](resource/image4.png)
 
+## 日志分析
+
+```bash
+uv run train_log_analyzer.py log.txt
+```
+![训练日志分析器](resource/image5.png)
 
 ## 优秀三方工作
 

@@ -329,10 +329,11 @@ mv <data-path> $PWD/data
 
 # start container
 docker run -it --network host --shm-size=32g \
---gpus all \
+--gpus all --cpus=12 \
 -v $PWD/data:/workspace/data \
 -v $PWD/models:/workspace/models \
 -v $PWD/outputs:/workspace/outputs \
+-v $PWD/finetune_stage.sh:/workspace/finetune_stage.sh \
 --restart=always \
 --name nano-finetune funasr-nano-finetune:Dockerfile /bin/bash
 
@@ -341,12 +342,21 @@ nohup bash auto_finetune.sh > full_train.log 2>&1 &
 ```
 
 `shm-size` Parameters must be explicitly specified.
+`cpus` It is recommended to have four times the number of graphics cards.
 
 ## Multi-card training
 
 As of now, for funasr-nano-2512, you need to add the following configuration to your model settings:
 
 ![Multi-card-training](resource/image4.png)
+
+## Log Analysis
+
+```bash
+uv run train_log_analyzer.py log.txt
+```
+
+![Training Log Analyzer](resource/image5.png)
 
 ## Remarkable Third-Party Work
 

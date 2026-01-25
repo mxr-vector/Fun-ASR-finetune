@@ -60,7 +60,7 @@ pip install -r requirements.txt
 
 # TODO
 
-- [ ] 支持返回时间戳
+- [x] 支持返回时间戳
 - [ ] 支持区分说话人识别
 - [x] 支持模型训练
 

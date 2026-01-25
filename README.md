@@ -60,7 +60,7 @@ pip install -r requirements.txt
 
 # TODO
 
-- [ ] Support returning timestamps
+- [x] Support returning timestamps
 - [ ] Support speaker diarization
 - [x] Support model training
 

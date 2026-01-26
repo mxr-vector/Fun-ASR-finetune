@@ -99,7 +99,7 @@ esac
 
 log_file="${output_dir}/log.txt"
 
-mkdir -p ${output_dir}
+mkdir -p  ${output_dir}
 echo "log_file: ${log_file}"
 # -------------------------
 # 判定同阶段续传， 不同阶段之间使用上一个阶段最好模型

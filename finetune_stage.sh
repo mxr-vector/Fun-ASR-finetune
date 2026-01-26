@@ -87,7 +87,7 @@ case ${STAGE} in
         FREEZE_PARAMS="
 ++audio_encoder_conf.freeze=true \
 ++audio_adaptor_conf.freeze=false \
-++llm_conf.freeze=false
+++llm_conf.freeze=true
 "
         ;;
         

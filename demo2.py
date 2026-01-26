@@ -7,7 +7,7 @@ from tools.utils import load_audio
 
 
 def main():
-    model_dir = "FunAudioLLM/Fun-ASR-Nano-2512"
+    model_dir = "models/Fun-ASR-Nano-2512"
     device = (
         "cuda:0"
         if torch.cuda.is_available()

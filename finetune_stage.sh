@@ -35,8 +35,8 @@ case ${STAGE} in
         echo "Stage 1: Warmup (50% general + 50% domain)"
         train_data="${data_dir}/stage1/train.jsonl"
         val_data="${data_dir}/stage1/val.jsonl"
-        max_epoch=10
-        learning_rate=0.0002
+        max_epoch=1
+        learning_rate=0.000003
         output_dir="./outputs/stage1_warmup"
         MODEL_INIT_PARAM="++model=${model_name_or_model_dir}"
         # Stage 1: 冻结encoder和LLM
@@ -57,8 +57,8 @@ case ${STAGE} in
         
         train_data="${data_dir}/stage2/train.jsonl"
         val_data="${data_dir}/stage2/val.jsonl"
-        max_epoch=20
-        learning_rate=0.0002
+        max_epoch=3
+        learning_rate=0.00001
         output_dir="./outputs/stage2_adaptation"
         MODEL_INIT_PARAM="++init_param=${stage1_best_model}"
         # Stage 2: 冻结encoder和LLM
@@ -79,15 +79,15 @@ case ${STAGE} in
         
         train_data="${data_dir}/stage3/train.jsonl"
         val_data="${data_dir}/stage3/val.jsonl"
-        max_epoch=10
-        learning_rate=0.00005  # 降低学习率
+        max_epoch=1
+        learning_rate=0.000005  # 降低学习率
         output_dir="./outputs/stage3_finetune"
         MODEL_INIT_PARAM="++init_param=${stage2_best_model}"
         # Stage 3: 只冻结encoder，解冻LLM和adaptor
         FREEZE_PARAMS="
 ++audio_encoder_conf.freeze=true \
 ++audio_adaptor_conf.freeze=false \
-++llm_conf.freeze=true
+++llm_conf.freeze=false
 "
         ;;
         

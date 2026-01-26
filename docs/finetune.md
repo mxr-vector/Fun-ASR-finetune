@@ -70,7 +70,7 @@ BAC009S0916W0489 湖北一公司以员工名义贷款数十员工负债千万
 
 ```
 python tools/scp2jsonl.py \
-  ++scp+file=data/train_wav.scp \
+  ++scp_file=data/train_wav.scp \
   ++transcript_file=data/train_text.txt \
   ++jsonl_file=data/train_example.jsonl
 ```

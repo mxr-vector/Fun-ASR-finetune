@@ -35,7 +35,7 @@ case ${STAGE} in
         echo "Stage 1: Warmup (50% general + 50% domain)"
         train_data="${data_dir}/stage1/train.jsonl"
         val_data="${data_dir}/stage1/val.jsonl"
-        max_epoch=1
+        max_epoch=2
         learning_rate=0.000003
         output_dir="./outputs/stage1_warmup"
         MODEL_INIT_PARAM="++model=${model_name_or_model_dir}"
@@ -57,7 +57,7 @@ case ${STAGE} in
         
         train_data="${data_dir}/stage2/train.jsonl"
         val_data="${data_dir}/stage2/val.jsonl"
-        max_epoch=3
+        max_epoch=2
         learning_rate=0.00001
         output_dir="./outputs/stage2_adaptation"
         MODEL_INIT_PARAM="++init_param=${stage1_best_model}"
@@ -79,11 +79,11 @@ case ${STAGE} in
         
         train_data="${data_dir}/stage3/train.jsonl"
         val_data="${data_dir}/stage3/val.jsonl"
-        max_epoch=1
-        learning_rate=0.000005  # 降低学习率
+        max_epoch=3
+        learning_rate=0.0001  # 降低学习率
         output_dir="./outputs/stage3_finetune"
         MODEL_INIT_PARAM="++init_param=${stage2_best_model}"
-        # Stage 3: 只冻结encoder，解冻LLM和adaptor
+        # Stage 3: 冻结encoder。 lora训练LLM
         FREEZE_PARAMS="
 ++audio_encoder_conf.freeze=true \
 ++audio_adaptor_conf.freeze=false \
@@ -143,6 +143,8 @@ torchrun $DISTRIBUTED_ARGS \
 ${train_tool} \
 ${INIT_PARAM} \
 ${RESUME_PARAM} \
+++llm_conf.use_lora=true \
+++llm_conf.lora_conf.freeze_lora=false \
 ++trust_remote_code=true \
 ++train_data_set_list="${train_data}" \
 ++valid_data_set_list="${val_data}" \

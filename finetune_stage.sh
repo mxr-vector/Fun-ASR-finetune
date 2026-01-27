@@ -9,7 +9,7 @@ echo "========================================"
 echo "Training Stage: ${STAGE}"
 echo "========================================"
 
-# export CUDA_VISIBLE_DEVICES="0"
+export CUDA_VISIBLE_DEVICES="2,3"
 # gpu_num=$(echo $CUDA_VISIBLE_DEVICES | awk -F "," '{print NF}')
 
 if [ -n "$CUDA_VISIBLE_DEVICES" ]; then
@@ -39,11 +39,13 @@ case ${STAGE} in
         learning_rate=0.00001
         output_dir="./outputs/stage1_warmup"
         MODEL_INIT_PARAM="++model=${model_name_or_model_dir}"
-        # Stage 1: 冻结encoder和LLM
+        # Stage 1: 只训练adaptor
         FREEZE_PARAMS="
 ++audio_encoder_conf.freeze=true \
 ++audio_adaptor_conf.freeze=false \
-++llm_conf.freeze=true
+++llm_conf.freeze=true \
+++llm_conf.use_lora=false \
+++llm_conf.lora_conf.freeze_lora=true
 "
         ;;
         
@@ -61,11 +63,13 @@ case ${STAGE} in
         learning_rate=0.000008
         output_dir="./outputs/stage2_adaptation"
         MODEL_INIT_PARAM="++init_param=${stage1_best_model}"
-        # Stage 2: 冻结encoder和LLM
+        # Stage 2: 只训练adaptor
         FREEZE_PARAMS="
 ++audio_encoder_conf.freeze=true \
 ++audio_adaptor_conf.freeze=false \
-++llm_conf.freeze=true
+++llm_conf.freeze=true \
+++llm_conf.use_lora=false \
+++llm_conf.lora_conf.freeze_lora=true
 "
         ;;
         
@@ -83,11 +87,13 @@ case ${STAGE} in
         learning_rate=0.000005  # 降低学习率
         output_dir="./outputs/stage3_finetune"
         MODEL_INIT_PARAM="++init_param=${stage2_best_model}"
-        # Stage 3: 冻结encoder。 lora训练LLM
+        # Stage 3: 冻结encoder. LoRA微调LLM
         FREEZE_PARAMS="
 ++audio_encoder_conf.freeze=true \
 ++audio_adaptor_conf.freeze=false \
-++llm_conf.freeze=false
+++llm_conf.freeze=true \
+++llm_conf.use_lora=true \
+++llm_conf.lora_conf.freeze_lora=false
 "
         ;;
         
@@ -143,15 +149,14 @@ torchrun $DISTRIBUTED_ARGS \
 ${train_tool} \
 ${INIT_PARAM} \
 ${RESUME_PARAM} \
-++llm_conf.use_lora=true \
-++llm_conf.lora_conf.freeze_lora=false \
+${FREEZE_PARAMS} \
 ++trust_remote_code=true \
 ++train_data_set_list="${train_data}" \
 ++valid_data_set_list="${val_data}" \
 ++dataset_conf.data_split_num=1 \
 ++dataset_conf.batch_sampler="BatchSampler" \
 ++dataset_conf.batch_type="token" \
-++dataset_conf.batch_size=6000 \
+++dataset_conf.batch_size=12000 \
 ++dataset_conf.sort_size=1024 \
 ++dataset_conf.num_workers=4 \
 ++dataset_conf.shuffle=true \
@@ -162,9 +167,10 @@ ${RESUME_PARAM} \
 ++train_conf.keep_nbest_models=20 \
 ++train_conf.avg_nbest_model=10 \
 ++train_conf.use_deepspeed=false \
+++train_conf.use_bf16=true \
+++enable_tf32=true \
 ++train_conf.deepspeed_config=${deepspeed_config} \
 ++optim_conf.lr=${learning_rate} \
-${FREEZE_PARAMS} \
 ++output_dir="${output_dir}" &> ${log_file}
 
 # 训练完成

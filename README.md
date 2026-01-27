@@ -200,6 +200,24 @@ We evaluated Fun-ASR against other state-of-the-art models on open-source benchm
 ## Phased Mixed Training
 
 Refer to the official website：https://gitee.com/WangJiaHui202144/funasr-nano/blob/main/docs/fintune_zh.md
+Choose the training method that suits your needs based on different data volumes.
+|Dimension|Full Fine-tuning|LoRA|
+|------|-----------|------|
+|**Parameters**|All LLM params (GB+)|Low-rank matrices (MB+)|
+|**Trainable Ratio**|100%|0.1%-1%|
+|**Overfitting Risk**|Extremely High|Low|
+|**Training Cost**|Extremely High (VRAM/Time)|Low (Save 70%+ VRAM)|
+|**LR Sensitivity**|Highly Sensitive (Precise Tuning)|More Tolerant|
+|**Data Requirements**|1000h+|10h-1000h|
+|**Small Data Performance**|Prone to Collapse/Degradation|Stable|
+|**Difficulty**|Extremely Hard to Control|Relatively Easy|
+|**Performance Ceiling**|Theoretically Highest|Slightly Lower (95%+ of Full)|
+|**Catastrophic Forgetting**|Severe|Minimal|
+|**Inference Overhead**|No Extra Cost|Optional Merge/Dynamic Loading|
+|**Multi-task Adaptation**|Requires Retraining|Multiple LoRAs in Parallel|
+|**Convergence Speed**|Slower|Faster|
+|**Checkpoint Size**|Full Model (GB)|LoRA Weights Only (MB)|
+|**Impact on General Capability**|May Severely Degrade|Largely Preserved|
 
 Train: Valid: Test = 8:1:1
 G1-G66590 train dataset

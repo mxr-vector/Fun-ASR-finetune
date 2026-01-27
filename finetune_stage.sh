@@ -162,10 +162,10 @@ ${FREEZE_PARAMS} \
 ++dataset_conf.shuffle=true \
 ++train_conf.max_epoch=${max_epoch} \
 ++train_conf.log_interval=1 \
-++train_conf.validate_interval=2000 \
-++train_conf.save_checkpoint_interval=2000 \
-++train_conf.keep_nbest_models=20 \
-++train_conf.avg_nbest_model=10 \
+++train_conf.validate_interval=1000 \
+++train_conf.save_checkpoint_interval=1000 \
+++train_conf.keep_nbest_models=10 \
+++train_conf.avg_nbest_model=5 \
 ++train_conf.use_deepspeed=false \
 ++train_conf.use_bf16=true \
 ++enable_tf32=true \

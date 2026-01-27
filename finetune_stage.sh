@@ -60,7 +60,7 @@ case ${STAGE} in
         train_data="${data_dir}/stage2/train.jsonl"
         val_data="${data_dir}/stage2/val.jsonl"
         max_epoch=3
-        learning_rate=0.000008
+        learning_rate=0.00005
         output_dir="./outputs/stage2_adaptation"
         MODEL_INIT_PARAM="++init_param=${stage1_best_model}"
         # Stage 2: 只训练adaptor
@@ -84,14 +84,14 @@ case ${STAGE} in
         train_data="${data_dir}/stage3/train.jsonl"
         val_data="${data_dir}/stage3/val.jsonl"
         max_epoch=4
-        learning_rate=0.000005  # 降低学习率
+        learning_rate=0.0002
         output_dir="./outputs/stage3_finetune"
         MODEL_INIT_PARAM="++init_param=${stage2_best_model}"
         # Stage 3: 冻结encoder. LoRA微调LLM
         FREEZE_PARAMS="
 ++audio_encoder_conf.freeze=true \
 ++audio_adaptor_conf.freeze=false \
-++llm_conf.freeze=true \
+++llm_conf.freeze=false \
 ++llm_conf.use_lora=true \
 ++llm_conf.lora_conf.freeze_lora=false
 "

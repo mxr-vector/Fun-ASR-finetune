@@ -36,16 +36,14 @@ case ${STAGE} in
         train_data="${data_dir}/stage1/train.jsonl"
         val_data="${data_dir}/stage1/val.jsonl"
         max_epoch=3
-        learning_rate=0.00001
+        learning_rate=0.00002
         output_dir="./outputs/stage1_warmup"
         MODEL_INIT_PARAM="++model=${model_name_or_model_dir}"
         # Stage 1: 只训练adaptor
         FREEZE_PARAMS="
 ++audio_encoder_conf.freeze=true \
 ++audio_adaptor_conf.freeze=false \
-++llm_conf.freeze=true \
-++llm_conf.use_lora=false \
-++llm_conf.lora_conf.freeze_lora=true
+++llm_conf.freeze=true
 "
         ;;
         
@@ -67,9 +65,7 @@ case ${STAGE} in
         FREEZE_PARAMS="
 ++audio_encoder_conf.freeze=true \
 ++audio_adaptor_conf.freeze=false \
-++llm_conf.freeze=true \
-++llm_conf.use_lora=false \
-++llm_conf.lora_conf.freeze_lora=true
+++llm_conf.freeze=true
 "
         ;;
         
@@ -153,7 +149,7 @@ ${FREEZE_PARAMS} \
 ++trust_remote_code=true \
 ++train_data_set_list="${train_data}" \
 ++valid_data_set_list="${val_data}" \
-++dataset_conf.data_split_num=1 \
+++dataset_conf.data_split_num="${gpu_num}" \
 ++dataset_conf.batch_sampler="BatchSampler" \
 ++dataset_conf.batch_type="token" \
 ++dataset_conf.batch_size=12000 \

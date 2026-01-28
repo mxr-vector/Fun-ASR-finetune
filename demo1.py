@@ -2,7 +2,7 @@ import torch
 
 
 def main():
-    model_dir = "FunAudioLLM/Fun-ASR-Nano-2512"
+    model_dir = "models/Fun-ASR-Nano-2512"
     device = (
         "cuda:0"
         if torch.cuda.is_available()
@@ -23,6 +23,7 @@ def main():
     )
 
     wav_path = f"{model.model_path}/example/zh.mp3"
+    # wav_path = f"data/domain/test/wav/G74916.wav"
     res = model.generate(
         input=[wav_path],
         cache={},

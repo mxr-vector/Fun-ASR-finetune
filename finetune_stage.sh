@@ -35,8 +35,8 @@ case ${STAGE} in
         echo "Stage 1: Warmup (50% general + 50% domain)"
         train_data="${data_dir}/stage1/train.jsonl"
         val_data="${data_dir}/stage1/val.jsonl"
-        max_epoch=3
-        learning_rate=0.00002
+        max_epoch=6
+        learning_rate=0.00003
         output_dir="./outputs/stage1_warmup"
         MODEL_INIT_PARAM="++model=${model_name_or_model_dir}"
         # Stage 1: 只训练adaptor
@@ -57,7 +57,7 @@ case ${STAGE} in
         
         train_data="${data_dir}/stage2/train.jsonl"
         val_data="${data_dir}/stage2/val.jsonl"
-        max_epoch=3
+        max_epoch=6
         learning_rate=0.00005
         output_dir="./outputs/stage2_adaptation"
         MODEL_INIT_PARAM="++init_param=${stage1_best_model}"
@@ -79,8 +79,8 @@ case ${STAGE} in
         
         train_data="${data_dir}/stage3/train.jsonl"
         val_data="${data_dir}/stage3/val.jsonl"
-        max_epoch=4
-        learning_rate=0.0002
+        max_epoch=8
+        learning_rate=0.00005
         output_dir="./outputs/stage3_finetune"
         MODEL_INIT_PARAM="++init_param=${stage2_best_model}"
         # Stage 3: 冻结encoder. LoRA微调LLM
@@ -149,7 +149,7 @@ ${FREEZE_PARAMS} \
 ++trust_remote_code=true \
 ++train_data_set_list="${train_data}" \
 ++valid_data_set_list="${val_data}" \
-++dataset_conf.data_split_num="${gpu_num}" \
+++dataset_conf.data_split_num=1 \
 ++dataset_conf.batch_sampler="BatchSampler" \
 ++dataset_conf.batch_type="token" \
 ++dataset_conf.batch_size=12000 \

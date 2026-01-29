@@ -374,6 +374,20 @@ nohup bash auto_finetune.sh > full_train.log 2>&1 &
 
 ![多卡训练配置](resource/image4.png)
 
+## 合并模型
+
+训练完成后你需要配置`tools/lora_merge.py`,完成最终模型合并
+
+```bash
+uv run tools/lora_merge.py
+```
+
+## 解码测试
+
+```bash
+uv run decode.py  ++model_dir=models/Fun-ASR-Nano-merged   ++scp_file=data/domain/train/wav.scp   ++output_file=output.txt
+```
+
 ## 日志分析
 
 ```bash

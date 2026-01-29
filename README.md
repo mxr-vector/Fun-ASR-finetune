@@ -375,6 +375,20 @@ As of now, for funasr-nano-2512, you need to add the following configuration to 
 
 ![Multi-card-training](resource/image4.png)
 
+## Merge Model
+
+After training is complete, you need to configure `tools/lora_merge.py` to perform the final model merging.
+
+```bash
+uv run tools/lora_merge.py
+```
+
+## Decoding Test
+
+```bash
+uv run decode.py  ++model_dir=models/Fun-ASR-Nano-merged   ++scp_file=data/domain/train/wav.scp   ++output_file=output.txt
+```
+
 ## Log Analysis
 
 ```bash

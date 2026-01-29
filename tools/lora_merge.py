@@ -3,8 +3,8 @@ from funasr import AutoModel
 
 # ===== 路径配置 =====
 BASE_MODEL_DIR = "models/Fun-ASR-Nano-2512"  # 必须是官方/原始完整模型
-LORA_CKPT = "models/lora_ckpt/model.pt.best"
-OUT_DIR = "models/Fun-ASR-Nano-merged"
+LORA_CKPT = "models/lora_ckpt/model.pt.best" # 训练好的模型
+OUT_DIR = "models/Fun-ASR-Nano-merged" # 输出目录
 
 # ===== 1. 加载 base 模型（含完整 LLM）=====
 model = AutoModel(model=BASE_MODEL_DIR, trust_remote_code=True, device="cpu")

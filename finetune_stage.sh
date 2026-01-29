@@ -83,13 +83,14 @@ case ${STAGE} in
         learning_rate=0.00005
         output_dir="./outputs/stage3_finetune"
         MODEL_INIT_PARAM="++init_param=${stage2_best_model}"
-        # Stage 3: 冻结encoder. LoRA微调LLM
+        # Stage 3: 冻结encoder.llm原始权重 LoRA微调LLM https://apxml.com/zh/courses/lora-peft-efficient-llm-training/chapter-2-lora-in-depth/lora-rank-selection
         FREEZE_PARAMS="
 ++audio_encoder_conf.freeze=true \
 ++audio_adaptor_conf.freeze=false \
-++llm_conf.freeze=false \
+++llm_conf.freeze=true \
 ++llm_conf.use_lora=true \
-++llm_conf.lora_conf.freeze_lora=false
+++llm_conf.lora_conf.freeze_lora=false \
+++llm_conf.lora_conf.r=16
 "
         ;;
         

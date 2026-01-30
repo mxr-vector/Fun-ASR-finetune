@@ -354,7 +354,7 @@ mv <模型地址> $PWD/workspace/models
 mv <数据地址> $PWD/workspace/data
 
 # 启动
-docker run -it --network=host --shm-size=32g \
+docker run -it --network=host --shm-size=16g \
 --gpus all --cpus=12 \
 -v $PWD/workspace:/workspace \
 --restart=on-failure \

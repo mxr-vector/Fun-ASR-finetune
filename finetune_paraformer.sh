@@ -1,13 +1,14 @@
 #!/bin/bash
 # finetune_three_stage.sh - 三阶段训练，参数全部写死
-# funASR paramforer系列模型使用训练脚本
+# FunASR Paraformer 系列模型三阶段训练脚本（自动加载 checkpoint）
 
 workspace=`pwd`
 
-export CUDA_VISIBLE_DEVICES="1,2,3"
+export CUDA_VISIBLE_DEVICES="0,1"
 gpu_num=$(echo $CUDA_VISIBLE_DEVICES | awk -F "," '{print NF}')
 
-model_name_or_model_dir="/workspace/models/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
+# 模型注册名
+model_name="speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
 
 # 数据目录，分阶段
 data_dir="/workspace/FunASR/data/staged"
@@ -31,10 +32,11 @@ train_run(){
     MAX_EPOCH=$4
     LR=$5
     OUTPUT_DIR=$6
-    MODEL_DIR=$7
+    INIT_CKPT=$7  # stage1 或 stage2 checkpoint
 
     mkdir -p ${OUTPUT_DIR}
     log_file="${OUTPUT_DIR}/log.txt"
+
     echo "=============================="
     echo "Stage ${STAGE_NAME} Training"
     echo "Train data: ${TRAIN_DATA}"
@@ -43,14 +45,14 @@ train_run(){
     echo "Learning rate: ${LR}"
     echo "=============================="
 
-    # 判定续训
-    CURRENT_STAGE_CKPT="${OUTPUT_DIR}/model.pt"
-    if [ -f "${CURRENT_STAGE_CKPT}" ]; then
-        echo ">> Found checkpoint: ${CURRENT_STAGE_CKPT}, resume training"
-        MODEL_DIR="++model=${CURRENT_STAGE_CKPT}"
-        RESUME_PARAM="++train_conf.resume=true"
+    # 判定是否有 checkpoint，用 init_param 加载
+    if [ -f "${INIT_CKPT}" ]; then
+        echo ">> Found checkpoint: ${INIT_CKPT}, using as init_param"
+        INIT_PARAM="++train_conf.init_param=${INIT_CKPT}"
+        RESUME_PARAM="++train_conf.resume=false"
     else
-        echo ">> No checkpoint, init from: ${MODEL_DIR}"
+        echo ">> No checkpoint, training from scratch"
+        INIT_PARAM=""
         RESUME_PARAM="++train_conf.resume=false"
     fi
 
@@ -58,7 +60,8 @@ train_run(){
 
     torchrun $DISTRIBUTED_ARGS \
     /workspace/FunASR/funasr/bin/train_ds.py \
-    ${MODEL_DIR} \
+    ++model=${model_name} \
+    ${INIT_PARAM} \
     ${RESUME_PARAM} \
     ++trust_remote_code=true \
     ++train_data_set_list="${TRAIN_DATA}" \
@@ -96,17 +99,17 @@ train_run(){
 train_run "Stage1_Warmup" \
 "${data_dir}/stage1/train.jsonl" \
 "${data_dir}/stage1/val.jsonl" \
-6 0.00003 \
+6 0.0001 \
 "./outputs/stage1_warmup" \
-"++model=${model_name_or_model_dir}"
+""
 
 # Stage 2: Domain Adaptation (20% general + 80% domain)
 train_run "Stage2_Adaptation" \
 "${data_dir}/stage2/train.jsonl" \
 "${data_dir}/stage2/val.jsonl" \
-6 0.00008 \
+6 0.0002 \
 "./outputs/stage2_adaptation" \
-"++model=${stage1_ckpt}" 
+"${stage1_ckpt}"
 
 # Stage 3: Fine-tuning (100% domain) LoRA 微调
 train_run "Stage3_Finetune" \
@@ -114,6 +117,6 @@ train_run "Stage3_Finetune" \
 "${data_dir}/stage3/val.jsonl" \
 8 0.0002 \
 "./outputs/stage3_finetune" \
-"++model=${stage2_ckpt}" 
+"${stage2_ckpt}"
 
 echo "All three stages completed successfully!"

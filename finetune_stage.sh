@@ -1,6 +1,6 @@
 #!/bin/bash
 # finetune_stage.sh - 适配预混合数据的版本
-
+# 本项目训练使用脚本
 workspace=`pwd`
 
 STAGE=${1:-1}
@@ -38,7 +38,7 @@ case ${STAGE} in
         max_epoch=6
         learning_rate=0.00003
         output_dir="./outputs/stage1_warmup"
-        MODEL_INIT_PARAM="++model=${model_name_or_model_dir}"
+        MODEL_DIR="++model=${model_name_or_model_dir}"
         # Stage 1: 只训练adaptor
         FREEZE_PARAMS="
 ++audio_encoder_conf.freeze=true \
@@ -60,7 +60,7 @@ case ${STAGE} in
         max_epoch=6
         learning_rate=0.00005
         output_dir="./outputs/stage2_adaptation"
-        MODEL_INIT_PARAM="++init_param=${stage1_best_model}"
+        MODEL_DIR="++model=${stage1_best_model}"
         # Stage 2: 只训练adaptor
         FREEZE_PARAMS="
 ++audio_encoder_conf.freeze=true \
@@ -82,7 +82,7 @@ case ${STAGE} in
         max_epoch=8
         learning_rate=0.00005
         output_dir="./outputs/stage3_finetune"
-        MODEL_INIT_PARAM="++init_param=${stage2_best_model}"
+        MODEL_DIR="++model=${stage2_best_model}"
         # Stage 3: 冻结encoder.llm原始权重 LoRA微调LLM https://apxml.com/zh/courses/lora-peft-efficient-llm-training/chapter-2-lora-in-depth/lora-rank-selection
         FREEZE_PARAMS="
 ++audio_encoder_conf.freeze=true \
@@ -112,12 +112,11 @@ CURRENT_STAGE_CKPT="${output_dir}/model.pt"
 if [ -f "${CURRENT_STAGE_CKPT}" ]; then
     echo ">> Found checkpoint: ${CURRENT_STAGE_CKPT}"
     echo ">> Resume training from this stage"
-    INIT_PARAM="++model=${model_name_or_model_dir} ++init_param=${CURRENT_STAGE_CKPT}"
+    MODEL_DIR="++model=${CURRENT_STAGE_CKPT}"
     RESUME_PARAM="++train_conf.resume=true"
 else
     echo ">> No checkpoint found in ${output_dir}"
     echo ">> Init from previous stage model"
-    INIT_PARAM="++model=${model_name_or_model_dir} ${MODEL_INIT_PARAM}"
     RESUME_PARAM="++train_conf.resume=false"
 fi
 
@@ -138,13 +137,13 @@ echo "Train data : ${train_data}"
 echo "Valid data : ${val_data}"
 echo "Output dir : ${output_dir}"
 echo "Resume     : ${RESUME_PARAM}"
-echo "Init param : ${INIT_PARAM}"
+echo "Model dir : ${MODEL_DIR}"
 echo "----------------------------------------"
 
 # ============ 训练命令 ============
 torchrun $DISTRIBUTED_ARGS \
 ${train_tool} \
-${INIT_PARAM} \
+${MODEL_DIR} \
 ${RESUME_PARAM} \
 ${FREEZE_PARAMS} \
 ++trust_remote_code=true \

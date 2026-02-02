@@ -246,8 +246,6 @@ G74916-G83238 test集
 
 `tools/datasets_utils.py`工具类具备大多数文件转换，包括将txt转为scp，json转jsonl，excel转jsonl等情况。覆盖whisper和funasr输入特征。使用此类工具建议按照如下结构进行wav和txt数据准备，使用该工具类生成scp
 
-![img1](resource/image.png)
-
 ![img2](resource/image2.png)
 
 ```bash
@@ -259,28 +257,50 @@ uv run tools/datasets_utils.py
 **linux**
 
 ```bash
+# nano
  uv run tools/scp2jsonl.py \
   ++scp_file=data/domain/train/wav.scp \
   ++transcript_file=data/domain/train/wav.txt \
-  ++jsonl_file=data/domain/train/wav.jsonl
+  ++jsonl_file=data/domain/train/wav_nano.jsonl
+
+# paraformer系列模型
+scp2jsonl \
+++scp_file_list='["data/domain/train/wav.scp", "data/domain/train/wav.txt"]' \
+++data_type_list='["source", "target"]' \
+++jsonl_file_out="data/domain/train/wav_paraformer.jsonl"
 ```
 
 **win**
 
 ```bash
-uv run tools/scp2jsonl.py ++scp_file=data/domain/train/wav.scp ++transcript_file=data/domain/train/wav.txt ++jsonl_file=data/domain/train/wav.jsonl
+# nano
+uv run tools/scp2jsonl.py ++scp_file=data/domain/train/wav.scp ++transcript_file=data/domain/train/wav.txt ++jsonl_file=data/domain/train/wav_nano.jsonl
+
+# paraformer系列模型
+scp2jsonl ++scp_file_list='["data/domain/train/wav.scp", "data/domain/train/wav.txt"]' ++data_type_list='["source", "target"]' ++jsonl_file_out="data/domain/train/wav_paraformer.jsonl"
 ```
 
 ### 3.使用prepare_staged_data.py混合数据集
 
-运行数据准备
+nano训练运行数据准备
 
 ```bash
 uv run tools/prepare_staged_data.py \
-  --general_train data/general/train/wav.jsonl \
-  --general_val data/general/valid/wav.jsonl \
-  --domain_train data/domain/train/wav.jsonl \
-  --domain_val data/domain/valid/wav.jsonl \
+  --general_train data/general/train/wav_nano.jsonl \
+  --general_val data/general/valid/wav_nano.jsonl \
+  --domain_train data/domain/train/wav_nano.jsonl \
+  --domain_val data/domain/valid/wav_nano.jsonl \
+  --output_dir data/staged
+```
+
+paraformer训练运行数据准备
+
+```bash
+uv run prepare_staged_data.py \
+  --general_train data/general/train/wav_paraformer.jsonl \
+  --general_val data/general/valid/wav_paraformer.jsonl \
+  --domain_train data/domain/train/wav_paraformer.jsonl \
+  --domain_val data/domain/valid/wav_paraformer.jsonl \
   --output_dir data/staged
 ```
 
@@ -300,7 +320,10 @@ uv run tools/prepare_staged_data.py \
 
 ![img3](resource/image3.png)
 
-### 4.微调finetune_stage.sh参数
+### 4.一键微调训练
+
+nano训练脚本参考 finetune_stage.sh
+paraformer训练脚本参考 finetune_paraformer.sh
 
 ```bash
 # 预训练模型路径
@@ -313,15 +336,18 @@ FREEZE_PARAMS="
 ++llm_conf.freeze=true
 ```
 
+参考 `https://github.com/modelscope/FunASR/blob/main/examples/industrial_data_pretraining/paraformer/README_zh.md#%E6%A8%A1%E5%9E%8B%E8%AE%AD%E7%BB%83%E4%B8%8E%E6%B5%8B%E8%AF%95`
+
 - model_name_or_model_dir 模型路径
 - audio_encoder_conf 声学编码器,true冻结
 - audio_adaptor_conf 声学适配层,false不冻结
 - llm_conf 高层语义模块,true冻结
 
-### 5.一键训练
-
 ```bash
-nohup bash auto_finetune.sh > full_train.log 2>&1 &
+# nano模型训练
+nohup bash auto_finetune.sh > full_train_nano.log 2>&1 &
+# paraformer自回归模型训练
+nohup bash finetune_paraformer.sh > full_train_paraformer.log 2>&1 &
 ```
 
 ## Docker训练
@@ -331,14 +357,20 @@ Docker 训练容器被设计为一次性使用，因此在训练过程中请务�
 
 ```bash
 # 构建镜像
-docker build -t funasr-nano-finetune:Dockerfile .
+docker build -t funasr-finetune:Dockerfile .
 
 docker builder prune --filter "until=24h"
+```
 
+# nano容器训练
+
+`请不要将多个模型容器使用同一份挂载卷，容易数据混乱`
+
+```bash
 mkdir nano-finetune
 
 # 启动临时容器拷贝文件到本地
-docker run -it --name nano-finetune funasr-nano-finetune:Dockerfile /bin/bash
+docker run -it --name nano-finetune funasr-finetune:Dockerfile /bin/bash
 
 # 开新终端 拷贝数据 拷贝一些你想自己调试的文件
 docker cp nano-finetune:/workspace $PWD
@@ -355,24 +387,59 @@ mv <数据地址> $PWD/workspace/data
 
 # 启动
 docker run -it --network=host --shm-size=16g \
---gpus all --cpus=12 \
+--gpus all --cpus=8 \
+-e LANG=C.UTF-8 \
+-e LC_ALL=C.UTF-8 \
+-e NVIDIA_VISIBLE_DEVICES=all \
+-e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
 -v $PWD/workspace:/workspace \
 --restart=on-failure \
---name nano-finetune funasr-nano-finetune:Dockerfile /bin/bash
+--name nano-finetune funasr-finetune:Dockerfile /bin/bash
 
 # 开启训练
-nohup bash auto_finetune.sh > full_train.log 2>&1 &
+nohup bash auto_finetune.sh > full_train_nano.log 2>&1 &
 ```
 
 `shm-size`参数必须显式指定
 `cpus` 建议是显卡数的4倍。
 若你想修改训练脚本，请进入容器拷贝`workspace/finetune_stage.sh `文件。或者拷贝整个/workspace目录到宿主机
 
-## 多卡训练
+# paraformer容器训练
 
-截止目前为止funasr-nano-2512您需要在模型配置中添加如下配置
+`请不要将多个模型容器使用同一份挂载卷，容易数据混乱`
 
-![多卡训练配置](resource/image4.png)
+```bash
+mkdir paraformer-finetune
+
+# 启动临时容器拷贝文件到本地
+docker run -it --name paraformer-finetune funasr-finetune:Dockerfile /bin/bash
+
+# 开新终端 拷贝数据 拷贝一些你想自己调试的文件
+docker cp paraformer-finetune:/workspace $PWD
+
+# 退出容器并删除临时容器
+docker rm -f paraformer-finetune
+
+mkdir $PWD/workspace/models $PWD/workspace/data  $PWD/workspace/outputs
+# 拷贝模型到本地
+mv <模型地址> $PWD/workspace/models
+
+# 拷贝数据到本地
+mv <数据地址> $PWD/workspace/data
+
+docker run -it --shm-size=8g --gpus=all --cpus=8 \
+  -p 10097:10095 \
+  -v $PWD/workspace:/workspace \
+  -e LANG=C.UTF-8 \
+  -e LC_ALL=C.UTF-8 \
+  -e NVIDIA_VISIBLE_DEVICES=all \
+  -e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+  --name paraformer-funasr \
+  funasr-finetune:Dockerfile /bin/bash
+
+# 开启训练
+nohup bash finetune_paraformer.sh > full_train_paraformer.log 2>&1 &
+```
 
 ## 合并模型
 

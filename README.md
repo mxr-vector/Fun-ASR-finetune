@@ -246,8 +246,6 @@ To reduce data preparation complexity, support for mixed-sample data is provided
 
 `tools/datasets_utils.py`This utility class supports most file conversions, including converting TXT to SCP, JSON to JSONL, Excel to JSONL, and more. It covers Whisper and Funasr input features. When using this utility class, it is recommended to prepare WAV and TXT data according to the following structure and use this utility class to generate SCP files.
 
-![img1](resource/image.png)
-
 ![img2](resource/image2.png)
 
 ```bash
@@ -259,28 +257,50 @@ uv run tools/datasets_utils.py
 **linux**
 
 ```bash
+# nano
  uv run tools/scp2jsonl.py \
   ++scp_file=data/domain/train/wav.scp \
   ++transcript_file=data/domain/train/wav.txt \
   ++jsonl_file=data/domain/train/wav.jsonl
+
+  # paraformer models
+scp2jsonl \
+++scp_file_list='["data/domain/train/wav.scp", "data/domain/train/wav.txt"]' \
+++data_type_list='["source", "target"]' \
+++jsonl_file_out="data/domain/train/wav_paraformer.jsonl"
 ```
 
 **win**
 
 ```bash
-uv run tools/scp2jsonl.py ++scp_file=data/domain/train/wav.scp ++transcript_file=data/domain/train/wav.txt ++jsonl_file=data/domain/train/wav.jsonl
+# nano
+uv run tools/scp2jsonl.py ++scp_file=data/domain/train/wav.scp ++transcript_file=data/domain/train/wav.txt ++jsonl_file=data/domain/train/wav_nano.jsonl
+
+# paraformer models
+scp2jsonl ++scp_file_list='["data/domain/train/wav.scp", "data/domain/train/wav.txt"]' ++data_type_list='["source", "target"]' ++jsonl_file_out="data/domain/train/wav_paraformer.jsonl"
 ```
 
 ### 3.Use prepare_staged_data.py to blend datasets
 
-Operational Data Preparation
+Operational Data Preparation for Nano
 
 ```bash
 uv run tools/prepare_staged_data.py \
-  --general_train data/general/train/wav.jsonl \
-  --general_val data/general/valid/wav.jsonl \
-  --domain_train data/domain/train/wav.jsonl \
-  --domain_val data/domain/valid/wav.jsonl \
+  --general_train data/general/train/wav_nano.jsonl \
+  --general_val data/general/valid/wav_nano.jsonl \
+  --domain_train data/domain/train/wav_nano.jsonl \
+  --domain_val data/domain/valid/wav_nano.jsonl \
+  --output_dir data/staged
+```
+
+Operational Data Preparation for paraformer
+
+```bash
+uv run prepare_staged_data.py \
+  --general_train data/general/train/wav_paraformer.jsonl \
+  --general_val data/general/valid/wav_paraformer.jsonl \
+  --domain_train data/domain/train/wav_paraformer.jsonl \
+  --domain_val data/domain/valid/wav_paraformer.jsonl \
   --output_dir data/staged
 ```
 
@@ -300,7 +320,10 @@ uv run tools/prepare_staged_data.py \
 
 ![img3](resource/image3.png)
 
-### 4.Fine-tune the parameters in finetune_stage.sh
+### 4.One-Click Fine-Tuning Training
+
+nano training script reference: finetune_stage.sh
+paraformer training script reference: finetune_paraformer.sh
 
 ```bash
 # Pre-trained Model Path
@@ -313,17 +336,18 @@ FREEZE_PARAMS="
 ++llm_conf.freeze=true
 ```
 
-| params                  | content                                            |
-| ----------------------- | -------------------------------------------------- |
-| model_name_or_model_dir | Model Path                                         |
-| audio_encoder_conf      | Acoustic Encoder, True Freeze                      |
-| audio_adaptor_conf      | Acoustic Adaptation Layer, false (does not freeze) |
-| llm_conf                | High-Level Semantic Module, true freeze            |
+For reference `https://github.com/modelscope/FunASR/blob/main/examples/industrial_data_pretraining/paraformer/README_zh.md#%E6%A8%A1%E5%9E%8B%E8%AE%AD%E7%BB%83%E4%B8%8E%E6%B5%8B%E8%AF%95`
 
-### 5.One-Click Training
+- model_name_or_model_dir Model path
+- audio_encoder_conf Acoustic encoder, true (frozen)
+- audio_adaptor_conf Acoustic adapter layer, false (unfrozen)
+- llm_conf High-level semantic module, true (frozen)
 
 ```bash
-nohup bash auto_finetune.sh > full_train.log 2>&1 &
+# Nano Model Training
+nohup bash auto_finetune.sh > full_train_nano.log 2>&1 &
+# Paraformer Autoregressive Model Training
+nohup bash finetune_paraformer.sh > full_train_paraformer.log 2>&1 &
 ```
 
 ## Docker Training
@@ -333,14 +357,20 @@ Docker training containers are designed for single-use. Therefore, during traini
 
 ```bash
 # build image
-docker build -t funasr-nano-finetune:Dockerfile .
+docker build -t funasr-finetune:Dockerfile .
 
 docker builder prune --filter "until=24h"
+```
 
+# nano container training
+
+`Do not use the same mounted volume for multiple model containers, as this may lead to data corruption.`
+
+```bash
 mkdir nano-finetune
 
 # Launch a temporary container to copy files to the local machine.
-docker run -it --name nano-finetune funasr-nano-finetune:Dockerfile /bin/bash
+docker run -it --name nano-finetune funasr-finetune:Dockerfile /bin/bash
 
 # Open a new terminal Copy the data Copy any files you wish to debug yourself
 docker cp nano-finetune:/workspace $PWD
@@ -360,7 +390,7 @@ docker run -it --network host --shm-size=32g \
 --gpus all --cpus=12 \
 -v $PWD/workspace:/workspace \
 --restart=on-failure \
---name nano-finetune funasr-nano-finetune:Dockerfile /bin/bash
+--name nano-finetune funasr-finetune:Dockerfile /bin/bash
 
 # start train
 nohup bash auto_finetune.sh > full_train.log 2>&1 &
@@ -368,6 +398,43 @@ nohup bash auto_finetune.sh > full_train.log 2>&1 &
 
 `shm-size` Parameters must be explicitly specified.
 `cpus` It is recommended to have four times the number of graphics cards.
+
+# Paraformer Container Training
+
+`Do not use the same mounted volume for multiple model containers, as this may lead to data corruption.`
+
+```bash
+mkdir paraformer-finetune
+
+# Launch a temporary container to copy files to the local machine.
+docker run -it --name paraformer-finetune funasr-finetune:Dockerfile /bin/bash
+
+# Open a new terminal Copy the data Copy any files you wish to debug yourself
+docker cp paraformer-finetune:/workspace $PWD
+
+# Exit the container and delete the temporary container
+docker rm -f paraformer-finetune
+
+mkdir $PWD/workspace/models $PWD/workspace/data  $PWD/workspace/outputs
+# Copy the model to your local machine
+mv <model-path> $PWD/workspace/models
+
+# Copy the model to your local machine
+mv <model-path> $PWD/workspace/data
+
+docker run -it --shm-size=8g --gpus=all --cpus=8 \
+  -p 10097:10095 \
+  -v $PWD/workspace:/workspace \
+  -e LANG=C.UTF-8 \
+  -e LC_ALL=C.UTF-8 \
+  -e NVIDIA_VISIBLE_DEVICES=all \
+  -e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+  --name paraformer-funasr \
+  funasr-finetune:Dockerfile /bin/bash
+
+# Start training
+nohup bash finetune_paraformer.sh > full_train_paraformer.log 2>&1 &
+```
 
 ## Multi-card training
 

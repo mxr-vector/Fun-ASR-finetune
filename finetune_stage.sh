@@ -33,10 +33,10 @@ stage2_best_model="./outputs/stage2_adaptation/model.pt.best"
 case ${STAGE} in
     1)
         echo "Stage 1: Warmup (50% general + 50% domain)"
-        train_data="${data_dir}/stage1/train.jsonl"
-        val_data="${data_dir}/stage1/val.jsonl"
+        train_data="${data_dir}/stage1/train_nano.jsonl"
+        val_data="${data_dir}/stage1/val_nano.jsonl"
         max_epoch=6
-        learning_rate=0.0001
+        learning_rate=0.0002
         output_dir="./outputs/stage1_warmup"
         MODEL_INIT_PARAM="++model=${model_name_or_model_dir}"
         # Stage 1: 只训练adaptor
@@ -55,10 +55,10 @@ case ${STAGE} in
             exit 1
         fi
         
-        train_data="${data_dir}/stage2/train.jsonl"
-        val_data="${data_dir}/stage2/val.jsonl"
-        max_epoch=6
-        learning_rate=0.0002
+        train_data="${data_dir}/stage2/train_nano.jsonl"
+        val_data="${data_dir}/stage2/val_nano.jsonl"
+        max_epoch=8
+        learning_rate=0.0005
         output_dir="./outputs/stage2_adaptation"
         MODEL_INIT_PARAM="++init_param=${stage1_best_model}"
         # Stage 2: 只训练adaptor
@@ -77,17 +77,17 @@ case ${STAGE} in
             exit 1
         fi
         
-        train_data="${data_dir}/stage3/train.jsonl"
-        val_data="${data_dir}/stage3/val.jsonl"
-        max_epoch=8
-        learning_rate=0.0002
+        train_data="${data_dir}/stage3/train_nano.jsonl"
+        val_data="${data_dir}/stage3/val_nano.jsonl"
+        max_epoch=10
+        learning_rate=0.0003
         output_dir="./outputs/stage3_finetune"
         MODEL_INIT_PARAM="++init_param=${stage2_best_model}"
         # Stage 3: 冻结encoder.llm原始权重 LoRA微调LLM https://apxml.com/zh/courses/lora-peft-efficient-llm-training/chapter-2-lora-in-depth/lora-rank-selection
         FREEZE_PARAMS="
 ++audio_encoder_conf.freeze=true \
 ++audio_adaptor_conf.freeze=false \
-++llm_conf.freeze=true \
+++llm_conf.freeze=false \
 ++llm_conf.use_lora=true \
 ++llm_conf.lora_conf.freeze_lora=false \
 ++llm_conf.lora_conf.r=32 \
@@ -154,7 +154,7 @@ ${FREEZE_PARAMS} \
 ++dataset_conf.data_split_num=1 \
 ++dataset_conf.batch_sampler="BatchSampler" \
 ++dataset_conf.batch_type="token" \
-++dataset_conf.batch_size=12000 \
+++dataset_conf.batch_size=6000 \
 ++dataset_conf.sort_size=1024 \
 ++dataset_conf.num_workers=4 \
 ++dataset_conf.shuffle=true \
@@ -166,6 +166,7 @@ ${FREEZE_PARAMS} \
 ++train_conf.avg_nbest_model=5 \
 ++train_conf.use_deepspeed=false \
 ++train_conf.use_bf16=true \
+++train_conf.find_unused_parameters=true \
 ++enable_tf32=true \
 ++train_conf.deepspeed_config=${deepspeed_config} \
 ++optim_conf.lr=${learning_rate} \

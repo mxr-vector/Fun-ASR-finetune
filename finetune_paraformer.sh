@@ -8,10 +8,12 @@ export CUDA_VISIBLE_DEVICES="0,1"
 gpu_num=$(echo $CUDA_VISIBLE_DEVICES | awk -F "," '{print NF}')
 
 # 模型注册名
-model_name="speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
+# model_name="/workspace/models/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
+model_name="models/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
 
 # 数据目录，分阶段
-data_dir="/workspace/FunASR/data/staged"
+data_dir="data/staged"
+# data_dir="/workspace/FunASR/data/staged"
 
 # checkpoint 保存路径
 stage1_ckpt="./outputs/stage1_warmup/model.pt.best"
@@ -22,7 +24,7 @@ DISTRIBUTED_ARGS="
     --nproc_per_node $gpu_num \
     --node_rank ${RANK:-0} \
     --master_addr ${MASTER_ADDR:-127.0.0.1} \
-    --master_port ${MASTER_PORT:-26669}
+    --master_port ${MASTER_PORT:-26668}
 "
 
 train_run(){
@@ -49,17 +51,18 @@ train_run(){
     if [ -f "${INIT_CKPT}" ]; then
         echo ">> Found checkpoint: ${INIT_CKPT}, using as init_param"
         INIT_PARAM="++train_conf.init_param=${INIT_CKPT}"
-        RESUME_PARAM="++train_conf.resume=false"
+        RESUME_PARAM="++train_conf.resume=true"
     else
         echo ">> No checkpoint, training from scratch"
         INIT_PARAM=""
         RESUME_PARAM="++train_conf.resume=false"
     fi
 
-    deepspeed_config=/workspace/FunASR/example/deepspeed_conf/ds_stage1.json
+    train_tool=`which funasr-train-ds`
+    deepspeed_config=${workspace}/deepspeed_conf/ds_stage1.json
 
     torchrun $DISTRIBUTED_ARGS \
-    /workspace/FunASR/funasr/bin/train_ds.py \
+    ${train_tool} \
     ++model=${model_name} \
     ${INIT_PARAM} \
     ${RESUME_PARAM} \
@@ -69,7 +72,7 @@ train_run(){
     ++dataset_conf.data_split_num=1 \
     ++dataset_conf.batch_sampler="BatchSampler" \
     ++dataset_conf.batch_type="token" \
-    ++dataset_conf.batch_size=8000 \
+    ++dataset_conf.batch_size=6000 \
     ++dataset_conf.sort_size=1024 \
     ++dataset_conf.num_workers=4 \
     ++dataset_conf.shuffle=true \
@@ -81,6 +84,7 @@ train_run(){
     ++train_conf.avg_nbest_model=5 \
     ++train_conf.use_deepspeed=false \
     ++train_conf.use_bf16=true \
+    ++train_conf.find_unused_parameters=true \
     ++enable_tf32=true \
     ++train_conf.deepspeed_config=${deepspeed_config} \
     ++optim_conf.lr=${LR} \
@@ -97,24 +101,24 @@ train_run(){
 # ----------------------
 # Stage 1: Warmup (50% general + 50% domain)
 train_run "Stage1_Warmup" \
-"${data_dir}/stage1/train.jsonl" \
-"${data_dir}/stage1/val.jsonl" \
+"${data_dir}/stage1/train_paraformer.jsonl" \
+"${data_dir}/stage1/val_paraformer.jsonl" \
 6 0.0001 \
 "./outputs/stage1_warmup" \
 ""
 
 # Stage 2: Domain Adaptation (20% general + 80% domain)
 train_run "Stage2_Adaptation" \
-"${data_dir}/stage2/train.jsonl" \
-"${data_dir}/stage2/val.jsonl" \
-6 0.0002 \
+"${data_dir}/stage2/train_paraformer.jsonl" \
+"${data_dir}/stage2/val_paraformer.jsonl" \
+8 0.0002 \
 "./outputs/stage2_adaptation" \
 "${stage1_ckpt}"
 
 # Stage 3: Fine-tuning (100% domain) LoRA 微调
 train_run "Stage3_Finetune" \
-"${data_dir}/stage3/train.jsonl" \
-"${data_dir}/stage3/val.jsonl" \
+"${data_dir}/stage3/train_paraformer.jsonl" \
+"${data_dir}/stage3/val_paraformer.jsonl" \
 8 0.0002 \
 "./outputs/stage3_finetune" \
 "${stage2_ckpt}"

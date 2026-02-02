@@ -4,7 +4,7 @@
 
 workspace=`pwd`
 
-export CUDA_VISIBLE_DEVICES="0,1"
+export CUDA_VISIBLE_DEVICES="0"
 gpu_num=$(echo $CUDA_VISIBLE_DEVICES | awk -F "," '{print NF}')
 
 # 模型注册名
@@ -103,7 +103,7 @@ train_run(){
 train_run "Stage1_Warmup" \
 "${data_dir}/stage1/train_paraformer.jsonl" \
 "${data_dir}/stage1/val_paraformer.jsonl" \
-6 0.0001 \
+1 0.0002 \
 "./outputs/stage1_warmup" \
 ""
 
@@ -111,7 +111,7 @@ train_run "Stage1_Warmup" \
 train_run "Stage2_Adaptation" \
 "${data_dir}/stage2/train_paraformer.jsonl" \
 "${data_dir}/stage2/val_paraformer.jsonl" \
-8 0.0002 \
+1 0.0002 \
 "./outputs/stage2_adaptation" \
 "${stage1_ckpt}"
 
@@ -119,7 +119,7 @@ train_run "Stage2_Adaptation" \
 train_run "Stage3_Finetune" \
 "${data_dir}/stage3/train_paraformer.jsonl" \
 "${data_dir}/stage3/val_paraformer.jsonl" \
-8 0.0002 \
+1 0.0002 \
 "./outputs/stage3_finetune" \
 "${stage2_ckpt}"
 

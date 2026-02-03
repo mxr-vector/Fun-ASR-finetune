@@ -123,17 +123,17 @@ def main_hydra(cfg: DictConfig):
                         {"processed": processed_count, "failed": failed_count}
                     )
 
-    print(f"\nProcessing completed:")
+    print(f"Processing completed:")
     print(f"  Total lines: {len(data_pairs)}")
     print(f"  Successfully processed: {processed_count}")
     print(f"  Failed: {failed_count}")
 
     if error_messages and len(error_messages) <= 10:
-        print(f"\nSample errors:")
+        print(f"Sample errors:")
         for error in error_messages[:10]:
             print(f"  - {error}")
     elif error_messages:
-        print(f"\nFirst 10 errors:")
+        print(f"First 10 errors:")
         for error in error_messages[:10]:
             print(f"  - {error}")
         print(f"  ... and {len(error_messages) - 10} more errors")

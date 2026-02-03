@@ -268,7 +268,7 @@ def main(**kwargs):
 
             time_escaped = (time.perf_counter() - time_slice_i) / 3600.0
             logging.info(
-                f"\n\nrank: {local_rank}, time_escaped: {time_escaped:.3f} hours\n"
+                f"rank: {local_rank}, time_escaped: {time_escaped:.3f} hours"
             )
 
         trainer.start_data_split_i = 0

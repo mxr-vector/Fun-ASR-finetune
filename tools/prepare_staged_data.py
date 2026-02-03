@@ -105,7 +105,7 @@ def main():
     print("=" * 60)
 
     # 加载数据
-    print("\n[1/4] Loading data...")
+    print("[1/4] Loading data...")
     general_train = load_jsonl(args.general_train)
     general_val = load_jsonl(args.general_val)
     domain_train = load_jsonl(args.domain_train)
@@ -117,29 +117,29 @@ def main():
     print(f"  Domain val: {len(domain_val)} samples")
 
     # 阶段1: 50/50 混合
-    print("\n[2/4] Creating Stage 1 data (50% general + 50% domain)...")
+    print("[2/4] Creating Stage 1 data (50% general + 50% domain)...")
     stage1_train = mix_datasets(general_train, domain_train, 0.5)
     stage1_val = mix_datasets(general_val, domain_val, 0.5)
     save_jsonl(stage1_train, f"{args.output_dir}/stage1/train.jsonl")
     save_jsonl(stage1_val, f"{args.output_dir}/stage1/val.jsonl")
 
     # 阶段2: 20/80 混合
-    print("\n[3/4] Creating Stage 2 data (20% general + 80% domain)...")
+    print("[3/4] Creating Stage 2 data (20% general + 80% domain)...")
     stage2_train = mix_datasets(general_train, domain_train, 0.2)
     stage2_val = mix_datasets(general_val, domain_val, 0.2)
     save_jsonl(stage2_train, f"{args.output_dir}/stage2/train.jsonl")
     save_jsonl(stage2_val, f"{args.output_dir}/stage2/val.jsonl")
 
     # 阶段3: 纯专业数据
-    print("\n[4/4] Creating Stage 3 data (100% domain)...")
+    print("[4/4] Creating Stage 3 data (100% domain)...")
     save_jsonl(domain_train, f"{args.output_dir}/stage3/train.jsonl")
     save_jsonl(domain_val, f"{args.output_dir}/stage3/val.jsonl")
 
-    print("\n" + "=" * 60)
+    print("=" * 60)
     print("✓ Data preparation completed!")
     print("=" * 60)
-    print(f"\nOutput directory: {args.output_dir}")
-    print("\nNext steps:")
+    print(f"Output directory: {args.output_dir}")
+    print("Next steps:")
     print("  nohup bash auto_finetune.sh > full_train.log 2>&1 &")
 
 

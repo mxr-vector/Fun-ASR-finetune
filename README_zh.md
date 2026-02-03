@@ -397,7 +397,7 @@ docker run -it --network=host --shm-size=16g \
 --name nano-finetune funasr-finetune:Dockerfile /bin/bash
 
 # 开启训练
-nohup bash auto_finetune.sh > full_train_nano.log 2>&1 &
+nohup bash auto_finetune.sh > full_train.log 2>&1 &
 ```
 
 `shm-size`参数必须显式指定
@@ -438,7 +438,7 @@ docker run -it --shm-size=8g --gpus=all --cpus=8 \
   funasr-finetune:Dockerfile /bin/bash
 
 # 开启训练
-nohup bash finetune_paraformer.sh > full_train_paraformer.log 2>&1 &
+nohup bash finetune_paraformer.sh > full_train.log 2>&1 &
 ```
 
 ## 合并模型

@@ -73,7 +73,7 @@ train_run(){
     ++dataset_conf.batch_sampler="BatchSampler" \
     ++dataset_conf.batch_type="token" \
     ++dataset_conf.batch_size=12000 \
-    ++dataset_conf.sort_size=1024 \
+    ++dataset_conf.sort_size=2048 \
     ++dataset_conf.num_workers=4 \
     ++dataset_conf.shuffle=true \
     ++train_conf.max_epoch=${MAX_EPOCH} \
@@ -85,6 +85,7 @@ train_run(){
     ++train_conf.use_deepspeed=false \
     ++train_conf.use_bf16=true \
     ++train_conf.find_unused_parameters=true \
+    ++train_conf.early_stopping_patience=2 \
     ++enable_tf32=true \
     ++train_conf.deepspeed_config=${deepspeed_config} \
     ++optim_conf.lr=${LR} \
@@ -111,7 +112,7 @@ train_run "Stage1_Warmup" \
 train_run "Stage2_Adaptation" \
 "${data_dir}/stage2/train_paraformer.jsonl" \
 "${data_dir}/stage2/val_paraformer.jsonl" \
-8 0.0002 \
+6 0.00005 \
 "./outputs/stage2_adaptation" \
 "${stage1_ckpt}"
 
@@ -119,7 +120,7 @@ train_run "Stage2_Adaptation" \
 train_run "Stage3_Finetune" \
 "${data_dir}/stage3/train_paraformer.jsonl" \
 "${data_dir}/stage3/val_paraformer.jsonl" \
-8 0.0002 \
+5 0.00002 \
 "./outputs/stage3_finetune" \
 "${stage2_ckpt}"
 

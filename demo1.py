@@ -2,14 +2,12 @@ import torch
 
 
 def main():
-    # model_dir = "models/Fun-ASR-Nano-2512"
-    model_dir = "models/Fun-ASR-Nano-merged"
+    model_dir = "models/Fun-ASR-Nano-2512"
+    # model_dir = "models/Fun-ASR-Nano-merged"
     device = (
         "cuda:0"
         if torch.cuda.is_available()
-        else "mps"
-        if torch.backends.mps.is_available()
-        else "cpu"
+        else "mps" if torch.backends.mps.is_available() else "cpu"
     )
 
     from funasr import AutoModel
@@ -20,7 +18,7 @@ def main():
         remote_code="./model.py",
         device=device,
         # hub：download models from ms (for ModelScope) or hf (for Hugging Face).
-        hub="ms"
+        hub="ms",
     )
 
     wav_path = f"{model.model_path}/example/zh.mp3"

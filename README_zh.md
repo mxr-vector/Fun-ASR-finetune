@@ -452,7 +452,8 @@ uv run tools/lora_merge.py
 ## 解码测试
 
 ```bash
-uv run decode.py  ++model_dir=models/Fun-ASR-Nano-merged   ++scp_file=data/domain/train/wav.scp   ++output_file=output.txt
+uv run decode.py  ++model_dir=models/Fun-ASR-Nano-merged   ++scp_file=data/domain/test/wav.scp   ++output_file=output.txt
+uv run decode.py  ++model_dir=models/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch   ++scp_file=data/domain/test/wav.scp   ++output_file=output.txt
 ```
 
 ## 日志分析

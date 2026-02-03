@@ -1,5 +1,6 @@
 # 避免dockerfile构建后，拷贝剩余文件拷贝到镜像中覆盖，导致venv重建
 .venv
+uv.lock
 __pycache__
 **/__pycache__/
 .git
@@ -10,3 +11,4 @@ models
 datasets
 data
 *.tar
+outputs

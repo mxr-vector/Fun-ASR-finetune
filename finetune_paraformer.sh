@@ -4,7 +4,7 @@
 
 workspace=`pwd`
 
-export CUDA_VISIBLE_DEVICES="0"
+export CUDA_VISIBLE_DEVICES="0,1"
 gpu_num=$(echo $CUDA_VISIBLE_DEVICES | awk -F "," '{print NF}')
 
 # 模型注册名
@@ -72,14 +72,14 @@ train_run(){
     ++dataset_conf.data_split_num=1 \
     ++dataset_conf.batch_sampler="BatchSampler" \
     ++dataset_conf.batch_type="token" \
-    ++dataset_conf.batch_size=6000 \
+    ++dataset_conf.batch_size=12000 \
     ++dataset_conf.sort_size=1024 \
     ++dataset_conf.num_workers=4 \
     ++dataset_conf.shuffle=true \
     ++train_conf.max_epoch=${MAX_EPOCH} \
     ++train_conf.log_interval=1 \
-    ++train_conf.validate_interval=1000 \
-    ++train_conf.save_checkpoint_interval=1000 \
+    ++train_conf.validate_interval=2000 \
+    ++train_conf.save_checkpoint_interval=2000 \
     ++train_conf.keep_nbest_models=10 \
     ++train_conf.avg_nbest_model=5 \
     ++train_conf.use_deepspeed=false \
@@ -103,7 +103,7 @@ train_run(){
 train_run "Stage1_Warmup" \
 "${data_dir}/stage1/train_paraformer.jsonl" \
 "${data_dir}/stage1/val_paraformer.jsonl" \
-1 0.0002 \
+6 0.0001 \
 "./outputs/stage1_warmup" \
 ""
 
@@ -111,7 +111,7 @@ train_run "Stage1_Warmup" \
 train_run "Stage2_Adaptation" \
 "${data_dir}/stage2/train_paraformer.jsonl" \
 "${data_dir}/stage2/val_paraformer.jsonl" \
-1 0.0002 \
+8 0.0002 \
 "./outputs/stage2_adaptation" \
 "${stage1_ckpt}"
 
@@ -119,7 +119,7 @@ train_run "Stage2_Adaptation" \
 train_run "Stage3_Finetune" \
 "${data_dir}/stage3/train_paraformer.jsonl" \
 "${data_dir}/stage3/val_paraformer.jsonl" \
-1 0.0002 \
+8 0.0002 \
 "./outputs/stage3_finetune" \
 "${stage2_ckpt}"
 

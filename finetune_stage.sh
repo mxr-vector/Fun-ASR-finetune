@@ -1,15 +1,13 @@
 #!/bin/bash
 # finetune_stage.sh - 适配预混合数据的版本
-
 workspace=`pwd`
-
 STAGE=${1:-1}
 
 echo "========================================"
 echo "Training Stage: ${STAGE}"
 echo "========================================"
 
-export CUDA_VISIBLE_DEVICES="2,3"
+export CUDA_VISIBLE_DEVICES="0"
 # gpu_num=$(echo $CUDA_VISIBLE_DEVICES | awk -F "," '{print NF}')
 
 if [ -n "$CUDA_VISIBLE_DEVICES" ]; then
@@ -130,7 +128,9 @@ DISTRIBUTED_ARGS="
     --master_port ${MASTER_PORT:-26669}
 "
 
-train_tool=`which funasr-train-ds`
+# train_tool=`which funasr-train-ds`
+# 使用修复的训练脚本
+train_tool="tools/funasr_train_lora_fixed.py"
 deepspeed_config=${workspace}/deepspeed_conf/ds_stage1.json
 
 
@@ -154,19 +154,20 @@ ${FREEZE_PARAMS} \
 ++dataset_conf.data_split_num=1 \
 ++dataset_conf.batch_sampler="BatchSampler" \
 ++dataset_conf.batch_type="token" \
-++dataset_conf.batch_size=6000 \
+++dataset_conf.batch_size=12000 \
 ++dataset_conf.sort_size=1024 \
 ++dataset_conf.num_workers=4 \
 ++dataset_conf.shuffle=true \
 ++train_conf.max_epoch=${max_epoch} \
 ++train_conf.log_interval=1 \
-++train_conf.validate_interval=1000 \
-++train_conf.save_checkpoint_interval=1000 \
+++train_conf.validate_interval=2000 \
+++train_conf.save_checkpoint_interval=2000 \
 ++train_conf.keep_nbest_models=10 \
 ++train_conf.avg_nbest_model=5 \
 ++train_conf.use_deepspeed=false \
 ++train_conf.use_bf16=true \
 ++train_conf.find_unused_parameters=true \
+++train_conf.early_stopping_patience=5 \
 ++enable_tf32=true \
 ++train_conf.deepspeed_config=${deepspeed_config} \
 ++optim_conf.lr=${learning_rate} \

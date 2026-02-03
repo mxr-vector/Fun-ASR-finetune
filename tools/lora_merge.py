@@ -9,6 +9,7 @@ OUT_DIR = "models/Fun-ASR-Nano-merged" # 输出目录
 # ===== 1. 加载 base 模型（含完整 LLM）=====
 model = AutoModel(model=BASE_MODEL_DIR, trust_remote_code=True, device="cpu")
 
+
 net = model.model  # 真实的 torch.nn.Module
 
 # ===== 2. 加载 LoRA 权重（非严格）=====

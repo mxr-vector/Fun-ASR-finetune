@@ -7,7 +7,7 @@ echo "========================================"
 echo "Training Stage: ${STAGE}"
 echo "========================================"
 
-export CUDA_VISIBLE_DEVICES="0"
+export CUDA_VISIBLE_DEVICES="2,3"
 # gpu_num=$(echo $CUDA_VISIBLE_DEVICES | awk -F "," '{print NF}')
 
 if [ -n "$CUDA_VISIBLE_DEVICES" ]; then

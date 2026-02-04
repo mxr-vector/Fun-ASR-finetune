@@ -1,7 +1,9 @@
 import os
 from funasr import AutoModel
 
-
+"""
+抽样测试
+"""
 def main():
     model_dir = "models/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
 

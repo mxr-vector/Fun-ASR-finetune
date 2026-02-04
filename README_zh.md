@@ -454,6 +454,11 @@ uv run tools/lora_merge.py
 ```bash
 uv run decode.py  ++model_dir=models/Fun-ASR-Nano-merged   ++scp_file=data/domain/test/wav.scp   ++output_file=output.txt
 uv run decode.py  ++model_dir=models/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch   ++scp_file=data/domain/test/wav.scp   ++output_file=output.txt
+
+uv run tools/whisper_mix_normalize.py data/val_text.txt data/val_norm.txt
+uv run tools/whisper_mix_normalize.py output.txt output_norm.txt
+compute-wer data/val_norm.txt output_norm.txt cer.txt
+tail -n8 cer.txt
 ```
 
 ## 日志分析

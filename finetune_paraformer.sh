@@ -104,7 +104,7 @@ train_run(){
 train_run "Stage1_Warmup" \
 "${data_dir}/stage1/train_paraformer.jsonl" \
 "${data_dir}/stage1/val_paraformer.jsonl" \
-6 0.0001 \
+10 0.0001 \
 "./outputs/stage1_warmup" \
 ""
 
@@ -112,7 +112,7 @@ train_run "Stage1_Warmup" \
 train_run "Stage2_Adaptation" \
 "${data_dir}/stage2/train_paraformer.jsonl" \
 "${data_dir}/stage2/val_paraformer.jsonl" \
-6 0.00005 \
+15 0.0002 \
 "./outputs/stage2_adaptation" \
 "${stage1_ckpt}"
 
@@ -120,7 +120,7 @@ train_run "Stage2_Adaptation" \
 train_run "Stage3_Finetune" \
 "${data_dir}/stage3/train_paraformer.jsonl" \
 "${data_dir}/stage3/val_paraformer.jsonl" \
-5 0.00002 \
+15 0.0002 \
 "./outputs/stage3_finetune" \
 "${stage2_ckpt}"
 

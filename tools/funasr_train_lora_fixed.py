@@ -23,7 +23,7 @@ from funasr.train_utils.model_summary import model_summary
 from funasr.train_utils.average_nbest_models import average_checkpoints
 from funasr import AutoModel
 
-# ===== 关键：导入 PEFT =====
+# ===== 导入 PEFT的LoRA微调工具 =====
 try:
     from peft import get_peft_model, LoraConfig, TaskType
 
@@ -131,6 +131,12 @@ def main(**kwargs):
     logging.info("Build model, frontend, tokenizer")
     device = kwargs.get("device", "cuda")
     kwargs["device"] = "cpu"
+
+    # ===== 修复：分离 init_param，确保先加载底座模型 =====
+    init_param = kwargs.pop("init_param", None)
+    if init_param is not None:
+        logging.info(f"Temporarily removing init_param to ensure base model loading: {init_param}")
+    
     model = AutoModel(**kwargs)
 
     if rank == 0:
@@ -142,6 +148,48 @@ def main(**kwargs):
     frontend = kwargs["frontend"]
     model = model.model
     del kwargs["model"]
+
+    # ===== 修复：手动加载 init_param =====
+    if init_param is not None:
+        logging.info("=" * 70)
+        logging.info(f"Loading pretrained params from {init_param}")
+        
+        try:
+            # 加载 checkpoint
+            if os.path.isdir(init_param): # 如果是目录，尝试找 model.pt
+                ckpt_path = os.path.join(init_param, "model.pt.best")
+                if not os.path.exists(ckpt_path):
+                    ckpt_path = os.path.join(init_param, "model.pt")
+                init_param = ckpt_path
+            
+            logging.info(f"Reading checkpoint: {init_param}")
+            state_dict = torch.load(init_param, map_location="cpu")
+            
+            # 兼容完整 checkpoint (包含 optimizer 等)
+            if isinstance(state_dict, dict):
+                if "model" in state_dict:
+                     logging.info("  Detected 'model' key in checkpoint, extracting state_dict...")
+                     state_dict = state_dict["model"]
+                elif "state_dict" in state_dict:
+                     logging.info("  Detected 'state_dict' key in checkpoint, extracting state_dict...")
+                     state_dict = state_dict["state_dict"]
+
+            # 尝试加载
+            missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
+            
+            # 过滤掉无关的 missing keys (比如 LLM 权重)
+            # 因为我们知道 stage1/2 可能没有 LLM 权重，这是正常的
+            # 重要的是 base model 已经加载了，所以 missing keys 意味着保留 base model 的权重
+            logging.info(f"Checkpoint loaded. Missing keys: {len(missing_keys)}, Unexpected keys: {len(unexpected_keys)}")
+            if len(missing_keys) > 0:
+                logging.warning(f"Some keys were missing in checkpoint (will use base model weights): {missing_keys[:5]} ...")
+            
+            logging.info("✓ Pretrained params loaded successfully")
+            logging.info("=" * 70)
+            
+        except Exception as e:
+            logging.error(f"✗ Failed to load init_param: {e}")
+            raise
 
     # ===== 关键修复：应用 LoRA =====
     llm_conf = kwargs.get("llm_conf", {})
@@ -219,7 +267,7 @@ def main(**kwargs):
     )
     dataloader = dataloader_class(**kwargs)
 
-    scaler = GradScaler(enabled=True) if trainer.use_fp16 else None
+    scaler = GradScaler("cuda",enabled=True) if trainer.use_fp16 else None
     scaler = ShardedGradScaler(enabled=trainer.use_fp16) if trainer.use_fsdp else scaler
 
     trainer.resume_checkpoint(

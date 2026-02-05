@@ -17,7 +17,7 @@ for stage in 1 2 3; do
     echo ""
     echo "[$stage/3] Starting Stage $stage: ${stage_names[$stage-1]}..."
     
-    if bash finetune_stage.sh $stage; then
+    if bash finetune_nano.sh $stage; then
         echo "✓ Stage $stage completed successfully!"
     else
         echo "❌ Stage $stage failed!"

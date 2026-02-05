@@ -322,7 +322,7 @@ uv run prepare_staged_data.py \
 
 ### 4.One-Click Fine-Tuning Training
 
-nano training script reference: finetune_stage.sh
+nano training script reference: finetune_nano.sh
 paraformer training script reference: finetune_paraformer.sh
 
 ```bash

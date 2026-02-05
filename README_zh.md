@@ -322,7 +322,7 @@ uv run prepare_staged_data.py \
 
 ### 4.一键微调训练
 
-nano训练脚本参考 finetune_stage.sh
+nano训练脚本参考 finetune_nano.sh
 paraformer训练脚本参考 finetune_paraformer.sh
 
 ```bash
@@ -402,7 +402,7 @@ nohup bash auto_finetune.sh > full_train.log 2>&1 &
 
 `shm-size`参数必须显式指定
 `cpus` 建议是显卡数的4倍。
-若你想修改训练脚本，请进入容器拷贝`workspace/finetune_stage.sh `文件。或者拷贝整个/workspace目录到宿主机
+若你想修改训练脚本，请进入容器拷贝`workspace/finetune_nano.sh `文件。或者拷贝整个/workspace目录到宿主机
 
 # paraformer容器训练
 

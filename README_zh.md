@@ -441,22 +441,24 @@ docker run -it --shm-size=8g --gpus=all --cpus=8 \
 nohup bash finetune_paraformer.sh > full_train.log 2>&1 &
 ```
 
-## 合并模型
+## nano合并模型
 
-训练完成后你需要配置`tools/lora_merge.py`,完成最终模型合并
-
+训练完成后若为`nano`模型你需要配置`tools/lora_merge.py`,完成最终模型合并.你可能看到经过LoRA训练的模型很大，远超几mb，因为为了支持断点续训文件仍保存了音频编码器和基础LLM的权重。这使您可在任何时刻暂停并重启训练，无需原始基础模型文件。
 ```bash
+# 具体参数修改详见合并脚本。
 uv run tools/lora_merge.py
 ```
 
 ## 解码测试
 
 ```bash
+# 解码
 uv run decode.py  ++model_dir=models/Fun-ASR-Nano-merged   ++scp_file=data/domain/test/wav.scp   ++output_file=output.txt
 uv run decode.py  ++model_dir=models/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch   ++scp_file=data/domain/test/wav.scp   ++output_file=output.txt
-
+# itn 逆文本正则化
 uv run tools/whisper_mix_normalize.py data/val_text.txt data/val_norm.txt
 uv run tools/whisper_mix_normalize.py output.txt output_norm.txt
+# 计算WER
 compute-wer data/val_norm.txt output_norm.txt cer.txt
 tail -n8 cer.txt
 ```

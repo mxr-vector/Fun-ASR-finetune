@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 正确的推理脚本 - 加载完整的三阶段训练结果
+model_with_adapter
 """
 from funasr import AutoModel
 import sys
@@ -46,7 +47,7 @@ def load_finetuned_model(
         state_dict = torch.load(stage3_adaptor, map_location="cpu")
         
         # 兼容完整 checkpoint
-        if isinstance(state_dict, dict):
+        if isinstance(state_dict, dict):  
              if "model" in state_dict:
                  state_dict = state_dict["model"]
              elif "state_dict" in state_dict:
@@ -58,21 +59,27 @@ def load_finetuned_model(
 
     return model
 
-
+import os
 if __name__ == "__main__":
     # 加载模型
     print("加载微调后的模型...")
     model = load_finetuned_model()
 
-    # 测试音频
-    # wav_path = "data/test/gz1.wav"
-    wav_path = f"{model.model_path}/example/zh.mp3"
-    print(f"\n识别音频: {wav_path}")
-    result = model.generate(input=wav_path)
+    # 遍历目录下所有 WAV/MP3 文件
+    test_dir = "data/test"
+    for file_name in os.listdir(test_dir):
+        if file_name.lower().endswith((".wav", ".WAV")):
+            wav_path = os.path.join(test_dir, file_name)
+            print(f"Processing: {wav_path}")
 
-    # 输出结果
-    if isinstance(result, list):
-        for r in result:
-            print(f"结果: {r.get('text', '')}")
-    else:
-        print(f"结果: {result.get('text', '')}")
+            try:
+                res = model.generate(input=wav_path)
+            except Exception as e:
+                print(f"Failed to process {wav_path}: {e}")
+            # 只输出 key 和 text
+            if isinstance(res, list):
+                for r in res:
+                    print(f"结果: {r.get('text', '')}")
+            else:
+                # 单条结果情况
+                print(f"结果: {res.get('text', '')}")

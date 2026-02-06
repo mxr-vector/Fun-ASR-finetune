@@ -9,107 +9,98 @@ from funasr import AutoModel
 
 # ===== 配置 =====
 BASE_MODEL_DIR = "models/Fun-ASR-Nano-2512"
-STAGE3_CKPT = "outputs/stage3_finetune/model.pt.best"  # Stage 3 checkpoint
+STAGE3_CKPT = "models/lora_ckpt/model.pt.best"  # Stage 3 checkpoint
 OUT_DIR = "models/Fun-ASR-Nano-merged"
 
 print("=" * 70)
 print("LoRA 合并脚本（修复版）")
 print("=" * 70)
 
-# ===== 1. 检查 checkpoint 是否包含 LoRA =====
+# ===== 1. 检查 checkpoint =====
 print("\n[1] 检查 checkpoint...")
-ckpt = torch.load(STAGE3_CKPT, map_location="cpu")
+full_ckpt = torch.load(STAGE3_CKPT, map_location="cpu")
+
+# 提取真正的 state_dict
+if "state_dict" in full_ckpt:
+    ckpt = full_ckpt["state_dict"]
+elif "model" in full_ckpt:
+    ckpt = full_ckpt["model"]
+else:
+    ckpt = full_ckpt
 
 lora_keys = [k for k in ckpt.keys() if "lora" in k.lower()]
 adaptor_keys = [k for k in ckpt.keys() if "adaptor" in k.lower()]
 
 print(f"  Checkpoint 内容:")
-print(f"    总参数: {len(ckpt)}")
-print(f"    Adaptor: {len(adaptor_keys)}")
-print(f"    LoRA: {len(lora_keys)}")
+print(f"    原始文件 Key: {list(full_ckpt.keys())[:5]}...")
+print(f"    提取后的参数总数: {len(ckpt)}")
+print(f"    Adaptor 相关参数: {len(adaptor_keys)}")
+print(f"    LoRA 相关参数: {len(lora_keys)}")
 
-if len(lora_keys) == 0:
-    print("\n⚠️  Checkpoint 不包含 LoRA 参数！")
-    print("   原因: 训练时 LoRA 被 excludes 排除了")
-    print("\n你有两个选择:")
-    print("  1. 直接使用当前模型（adaptor 可能已经足够好）")
-    print("  2. 重新训练 Stage 3 并修改保存策略")
+if len(lora_keys) == 0 and len(adaptor_keys) == 0:
+    print("\n⚠️  Checkpoint 不包含已训练的参数 (LoRA 或 Adaptor)！")
+    exit(1)
 
-    # 测试当前模型
-    print("\n尝试加载模型测试...")
-    try:
-        test_model = AutoModel(
-            model=BASE_MODEL_DIR,
-            init_param=STAGE3_CKPT,
-            trust_remote_code=True,
-            device="cpu",
-        )
-        print("✓ 模型加载成功（仅 adaptor）")
-        print("  你可以直接使用这个模型进行推理")
-    except Exception as e:
-        print(f"✗ 模型加载失败: {e}")
+# ===== 2. 加载基础模型并手动应用 LoRA =====
+print("\n[2] 加载基础模型并手动应用 LoRA...")
 
-    exit(0)
-
-# ===== 2. 如果有 LoRA，加载模型并应用 LoRA =====
-print("\n[2] 加载基础模型并应用 LoRA...")
-
-# 必须在加载时指定 LoRA 配置
 model = AutoModel(
     model=BASE_MODEL_DIR,
     trust_remote_code=True,
     device="cpu",
-    llm_conf=dict(
-        use_lora=True,
-        lora_conf=dict(
-            r=32,
-            lora_alpha=64,
-        ),
-    ),
 )
 
 net = model.model
 
+# 手动应用 LoRA 到 LLM
+print("  正在应用 LoRA 结构到 LLM...")
+try:
+    from peft import get_peft_model, LoraConfig, TaskType
+    
+    # 这里的配置必须和训练时完全一致 (finetune_nano.sh Stage 3)
+    lora_config = LoraConfig(
+        task_type=TaskType.CAUSAL_LM,
+        inference_mode=False,
+        r=32,
+        lora_alpha=64,
+        lora_dropout=0.05,
+        target_modules=["q_proj", "v_proj"],
+        bias="none",
+    )
+    
+    net.llm = get_peft_model(net.llm, lora_config)
+    print("  ✓ LoRA 结构已应用")
+except Exception as e:
+    print(f"  ✗ 应用 LoRA 失败: {e}")
+    exit(1)
+
 # ===== 3. 加载训练好的权重 =====
-print("\n[3] 加载训练权重...")
+print("\n[3] 加载训练权重 (Base + Adaptor + LoRA)...")
 missing, unexpected = net.load_state_dict(ckpt, strict=False)
 
-print(f"  Missing: {len(missing)}")
-print(f"  Unexpected: {len(unexpected)}")
-
-# 验证 LoRA 是否存在
-lora_modules = []
-for name, module in net.named_modules():
-    if hasattr(module, "merge_and_unload"):
-        lora_modules.append(name)
-
-print(f"\n  检测到 {len(lora_modules)} 个 LoRA 模块")
-
-if len(lora_modules) == 0:
-    print("✗ 没有 LoRA 模块可以合并！")
-    exit(1)
+print(f"  Missing keys: {len(missing)}")
+print(f"  Unexpected keys: {len(unexpected)}")
 
 # ===== 4. 合并 LoRA =====
 print("\n[4] 合并 LoRA 到基础权重...")
-merged = 0
-for name, module in net.named_modules():
-    if hasattr(module, "merge_and_unload"):
-        print(f"  合并: {name}")
-        module.merge_and_unload()
-        merged += 1
 
-print(f"\n✓ 成功合并 {merged} 个 LoRA 模块")
+if hasattr(net.llm, "merge_and_unload"):
+    print("  正在执行 merge_and_unload()...")
+    net.llm = net.llm.merge_and_unload()
+    print("  ✓ LoRA 已合并到基础权重")
+else:
+    print("  ✗ 无法找到 merge_and_unload 方法！")
+    exit(1)
 
 # ===== 5. 保存合并后的模型 =====
 print("\n[5] 保存合并后的模型...")
 os.makedirs(OUT_DIR, exist_ok=True)
 
-# 保存完整的 state_dict
+# 确保我们保存的是原始合并后的结构 (不含 PEFT 封装)
 torch.save(net.state_dict(), f"{OUT_DIR}/model.pt")
 
 # 复制配置文件
 import shutil
-
 for file in [
     "config.yaml",
     "configuration.json",
@@ -119,6 +110,7 @@ for file in [
     src = os.path.join(BASE_MODEL_DIR, file)
     dst = os.path.join(OUT_DIR, file)
     if os.path.exists(src):
+        # 如果是 config.yaml，我们要确保 use_lora 是 false (因为已经合并了)
         shutil.copy(src, dst)
         print(f"  复制: {file}")
 
@@ -130,14 +122,23 @@ if os.path.exists(qwen_src):
         shutil.rmtree(qwen_dst)
     shutil.copytree(qwen_src, qwen_dst)
     print(f"  复制: Qwen3-0.6B/")
+# example
+example_src = os.path.join(BASE_MODEL_DIR, "example")
+example_dst = os.path.join(OUT_DIR, "example")
+if os.path.exists(example_src):
+    if os.path.exists(example_dst):
+        shutil.rmtree(example_dst)
+    shutil.copytree(example_src, example_dst)
+    print(f"  复制: example/")
 
 print(f"\n✓ 合并完成！保存到: {OUT_DIR}")
-print(f"  文件大小: {os.path.getsize(f'{OUT_DIR}/model.pt') / (1024*1024):.2f} MB")
+print(f"  最终模型参数量: {len(net.state_dict())}")
 
 # ===== 6. 验证合并后的模型 =====
 print("\n[6] 验证合并后的模型...")
 try:
-    merged_model = AutoModel(model=OUT_DIR, trust_remote_code=True, device="cpu")
+    # 验证时不需要 init_param，因为已经合并了
+    merged_model = AutoModel(model=OUT_DIR, trust_remote_code=True, device="cpu", disable_update=True)
     print("✓ 合并后的模型可以正常加载")
 except Exception as e:
     print(f"✗ 合并后的模型加载失败: {e}")

@@ -1,5 +1,5 @@
 #!/bin/bash
-# finetune_three_stage.sh - 三阶段训练，参数全部写死
+# finetune_paraformer.sh - 三阶段训练，参数全部写死
 # FunASR Paraformer 系列模型三阶段训练脚本（自动加载 checkpoint）
 
 workspace=`pwd`
@@ -104,7 +104,7 @@ train_run(){
 train_run "Stage1_Warmup" \
 "${data_dir}/stage1/train_paraformer.jsonl" \
 "${data_dir}/stage1/val_paraformer.jsonl" \
-10 0.0001 \
+15 0.0001 \
 "./outputs/stage1_warmup" \
 ""
 
@@ -112,7 +112,7 @@ train_run "Stage1_Warmup" \
 train_run "Stage2_Adaptation" \
 "${data_dir}/stage2/train_paraformer.jsonl" \
 "${data_dir}/stage2/val_paraformer.jsonl" \
-15 0.0002 \
+20 0.0002 \
 "./outputs/stage2_adaptation" \
 "${stage1_ckpt}"
 
@@ -120,7 +120,7 @@ train_run "Stage2_Adaptation" \
 train_run "Stage3_Finetune" \
 "${data_dir}/stage3/train_paraformer.jsonl" \
 "${data_dir}/stage3/val_paraformer.jsonl" \
-15 0.0002 \
+25 0.0001 \
 "./outputs/stage3_finetune" \
 "${stage2_ckpt}"
 

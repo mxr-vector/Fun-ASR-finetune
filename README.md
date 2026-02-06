@@ -442,18 +442,27 @@ As of now, for funasr-nano-2512, you need to add the following configuration to 
 
 ![Multi-card-training](resource/image4.png)
 
-## Merge Model
+## Merge Nano Model
 
-After training is complete, you need to configure `tools/lora_merge.py` to perform the final model merging.
+After training completion, if using a `nano` model, you must configure `tools/lora_merge.py` to perform the final model merging. You may observe that the LoRA-trained model is significantly larger, often exceeding several megabytes, because it retains both the audio encoder and base LLM weights to support resume training. This allows you to pause and restart training at any point without needing the original base model files.
 
 ```bash
+# For specific parameter modifications, refer to the merge script.
 uv run tools/lora_merge.py
 ```
 
 ## Decoding Test
 
 ```bash
-uv run decode.py  ++model_dir=models/Fun-ASR-Nano-merged   ++scp_file=data/domain/train/wav.scp   ++output_file=output.txt
+# decode
+uv run decode.py  ++model_dir=models/Fun-ASR-Nano-merged   ++scp_file=data/domain/test/wav.scp   ++output_file=output.txt
+uv run decode.py  ++model_dir=models/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch   ++scp_file=data/domain/test/wav.scp   ++output_file=output.txt
+# itn inverse text normalization
+uv run tools/whisper_mix_normalize.py data/val_text.txt data/val_norm.txt
+uv run tools/whisper_mix_normalize.py output.txt output_norm.txt
+# compute-wer
+compute-wer data/val_norm.txt output_norm.txt cer.txt
+tail -n8 cer.txt
 ```
 
 ## Log Analysis
@@ -469,6 +478,7 @@ uv run train_log_analyzer.py log.txt
 ## Remarkable Third-Party Work
 
 - vLLM (GPU) Deployment Best Practices: An accelerated implementation of Fun-ASR using vLLM. [Repository](https://github.com/yuekaizhang/Fun-ASR-vllm)
+- vLLM (GGUF) Best Inference Practices:[Repository](https://github.com/HaujetZhao/Fun-ASR-GGUF)
 
 ## Citations
 

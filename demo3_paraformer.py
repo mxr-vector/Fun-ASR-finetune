@@ -1,9 +1,7 @@
 import os
 from funasr import AutoModel
 
-"""
-抽样测试
-"""
+
 def main():
     model_dir = "models/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
 
@@ -20,7 +18,9 @@ def main():
 
     test_dir = "data/test"
 
-    # 遍历目录下所有 WAV/MP3 文件
+    results = []  # 统一收集所有结果
+
+    # 遍历目录下所有 WAV 文件
     for file_name in os.listdir(test_dir):
         if file_name.lower().endswith((".wav", ".WAV")):
             wav_path = os.path.join(test_dir, file_name)
@@ -30,17 +30,32 @@ def main():
                 res = model.generate(input=wav_path, batch_size_s=300)
             except Exception as e:
                 print(f"Failed to process {wav_path}: {e}")
-            # 只输出 key 和 text
+                continue
+
+            # 统一转为 list 处理
             if isinstance(res, list):
                 for r in res:
-                    key = r.get("key", "")
-                    text = r.get("text", "")
-                    print(f"{key}: {text}")
+                    results.append(
+                        {
+                            "file": file_name,
+                            "key": r.get("key", ""),
+                            "text": r.get("text", ""),
+                        }
+                    )
             else:
-                # 单条结果情况
-                key = res.get("key", "")
-                text = res.get("text", "")
-                print(f"{key}: {text}")
+                results.append(
+                    {
+                        "file": file_name,
+                        "key": res.get("key", ""),
+                        "text": res.get("text", ""),
+                    }
+                )
+
+    # 最后统一输出
+    print("\n===== FINAL RESULT =====")
+    for item in results:
+        print(f"{item['file']} | {item['key']}: {item['text']}")
+
 
 if __name__ == "__main__":
     main()

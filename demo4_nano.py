@@ -5,6 +5,8 @@ model_with_adapter
 """
 from funasr import AutoModel
 import sys
+import os
+import torch
 
 
 def load_finetuned_model(
@@ -15,58 +17,51 @@ def load_finetuned_model(
 ):
     """
     加载完整的微调模型
-
-    参数说明:
-    - base_model_dir: 原始模型（包含 Qwen3-0.6B）
-    - stage3_adaptor: Stage 3 训练的 adaptor 权重
-    - use_lora: 是否启用 LoRA（必须与训练时一致）
     """
 
-    import torch
-    
-    # 1. 即使是推理，也必须先加载完整的 Base Model
-    # 否则 AutoModel 会只加载 init_param 而忽略 Base Model 的 LLM 权重
     print(f"Loading base model from: {base_model_dir}")
     model = AutoModel(
         model=base_model_dir,
         trust_remote_code=True,
         device=device,
-        # 必须指定 LLM 配置，确保结构正确
         llm_conf=dict(
             use_lora=use_lora,
-            lora_conf=dict(
-                r=32,
-                lora_alpha=64,
-            ) if use_lora else {},
+            lora_conf=(
+                dict(
+                    r=32,
+                    lora_alpha=64,
+                )
+                if use_lora
+                else {}
+            ),
         ),
     )
 
-    # 2. 手动加载训练好的权重 (Adaptor + LoRA)
     if stage3_adaptor:
         print(f"Loading finetuned weights from: {stage3_adaptor}")
         state_dict = torch.load(stage3_adaptor, map_location="cpu")
-        
-        # 兼容完整 checkpoint
-        if isinstance(state_dict, dict):  
-             if "model" in state_dict:
-                 state_dict = state_dict["model"]
-             elif "state_dict" in state_dict:
-                 state_dict = state_dict["state_dict"]
 
-        # 加载权重 (strict=False 是必须的，因为 Base Model 有很多非训练参数)
+        if isinstance(state_dict, dict):
+            if "model" in state_dict:
+                state_dict = state_dict["model"]
+            elif "state_dict" in state_dict:
+                state_dict = state_dict["state_dict"]
+
         model.model.load_state_dict(state_dict, strict=False)
         print("✓ Finetuned weights loaded successfully")
 
     return model
 
-import os
+
 if __name__ == "__main__":
-    # 加载模型
     print("加载微调后的模型...")
     model = load_finetuned_model()
 
-    # 遍历目录下所有 WAV/MP3 文件
     test_dir = "data/test"
+
+    # ====== 统一结果收集 ======
+    all_results = []
+
     for file_name in os.listdir(test_dir):
         if file_name.lower().endswith((".wav", ".WAV")):
             wav_path = os.path.join(test_dir, file_name)
@@ -76,10 +71,30 @@ if __name__ == "__main__":
                 res = model.generate(input=wav_path)
             except Exception as e:
                 print(f"Failed to process {wav_path}: {e}")
-            # 只输出 key 和 text
+                all_results.append(
+                    {"file": file_name, "text": "", "status": "failed", "error": str(e)}
+                )
+                continue
+
+            # 统一结构化存储
             if isinstance(res, list):
                 for r in res:
-                    print(f"结果: {r.get('text', '')}")
+                    all_results.append(
+                        {"file": file_name, "text": r.get("text", ""), "status": "ok"}
+                    )
             else:
-                # 单条结果情况
-                print(f"结果: {res.get('text', '')}")
+                all_results.append(
+                    {"file": file_name, "text": res.get("text", ""), "status": "ok"}
+                )
+
+    # ====== 最后统一输出 ======
+    print("\n================ 统一识别结果 ================\n")
+    for item in all_results:
+        print(f"[{item['file']}] -> {item['text']}")
+
+    # 可选：同时保存为文本文件
+    with open("asr_result.txt", "w", encoding="utf-8") as f:
+        for item in all_results:
+            f.write(f"{item['file']}\t{item['text']}\n")
+
+    print("\n✓ 全部处理完成，结果已写入 asr_result.txt")

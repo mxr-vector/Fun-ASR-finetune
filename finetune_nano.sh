@@ -77,7 +77,7 @@ case ${STAGE} in
         
         train_data="${data_dir}/stage3/train_nano.jsonl"
         val_data="${data_dir}/stage3/val_nano.jsonl"
-        max_epoch=6
+        max_epoch=10
         learning_rate=0.00005
         output_dir="./outputs/stage3_finetune"
         MODEL_INIT_PARAM="++init_param=${stage2_best_model}"

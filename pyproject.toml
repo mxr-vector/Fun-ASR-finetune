@@ -10,16 +10,58 @@ dependencies = [
     "funasr>=1.3.1",
     "matplotlib>=3.10.8",
     "openai-whisper>=20250625",
-    "peft>=0.18.1",
     "pyopenjtalk-plus>=0.4.1.post7",
     "pyqt6>=6.10.2",
-    "torch>=2.9.0",
-    "torchaudio>=2.9.0",
-    "transformers>=4.51.3",
     "whisper-normalizer>=0.1.12",
     "zhconv>=1.4.3",
 ]
 
+# 指定 extra 依赖
+[project.optional-dependencies]
+cpu = [
+  "torch==2.9.0+cpu",
+  "torchvision==0.24.0+cpu",
+  "torchaudio==2.9.0+cpu",
+]
+cu128 = [
+  "torch==2.9.0+cu128",
+  "torchvision==0.24.0+cu128",
+  "torchaudio==2.9.0+cu128",
+]
+# 兼容5080+
+cu130 = [
+  "torch==2.9.0+cu130",
+  "torchvision==0.24.0+cu130",
+  "torchaudio==2.9.0+cu130",
+]
+
+[tool.uv]
+conflicts = [
+  [
+    { extra = "cpu" },
+    { extra = "cu128" },
+    { extra = "cu130" },
+  ],
+]
+
+
+# 指定源
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu", extra = "cpu" },
+  { index = "pytorch-cu128", extra = "cu128" },
+  { index = "pytorch-cu130", extra = "cu130" },
+]
+torchvision = [
+  { index = "pytorch-cpu", extra = "cpu" },
+  { index = "pytorch-cu128", extra = "cu128" },
+  { index = "pytorch-cu130", extra = "cu130" },
+]
+torchaudio = [
+  { index = "pytorch-cpu", extra = "cpu" },
+  { index = "pytorch-cu128", extra = "cu128" },
+  { index = "pytorch-cu130", extra = "cu130" },
+]
 
 # 官方 PyPI 镜像（默认国内源可选）
 [[tool.uv.index]]
@@ -34,3 +76,19 @@ url = "https://mirrors.aliyun.com/pypi/simple/"
 [[tool.uv.index]]
 name = "huawei"
 url = "https://mirrors.huaweicloud.com/repository/pypi/simple"
+
+# PyTorch 官方 CPU wheel
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://mirrors.nju.edu.cn/pytorch/whl/cpu"
+explicit = true
+
+# PyTorch 官方 GPU wheel
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://mirrors.nju.edu.cn/pytorch/whl/cu128"
+explicit = true
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://mirrors.nju.edu.cn/pytorch/whl/cu130"
+explicit = true

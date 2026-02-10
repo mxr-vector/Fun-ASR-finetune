@@ -6,6 +6,13 @@
 
 Fun-ASR 是通义实验室推出的端到端语音识别大模型，是基于数千万小时真实语音数据训练而成，具备强大的上下文理解能力与行业适应性，支持低延迟实时听写，并且覆盖 31 个语种。在教育、金融等垂直领域表现出色，能准确识别专业术语与行业表达，有效应对"幻觉"生成和语种混淆等挑战，实现"听得清、懂其意、写得准"。
 
+# 项目启动说明
+```bash
+uv sync --extra cu128
+# uv sync --extra cu130
+uv pip install transformers peft
+```
+
 <div align="center">
 <img src="images/funasr-v2.png">
 </div>

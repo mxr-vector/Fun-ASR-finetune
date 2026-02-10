@@ -105,6 +105,8 @@ def main():
     print("=" * 60)
 
     # 加载数据
+    dynamic_train_filename = args.general_train.split("/")[-1].replace("wav","train")
+    dynamic_val_filename = args.general_val.split("/")[-1].replace("wav","val")
     print("[1/4] Loading data...")
     general_train = load_jsonl(args.general_train)
     general_val = load_jsonl(args.general_val)
@@ -120,20 +122,20 @@ def main():
     print("[2/4] Creating Stage 1 data (50% general + 50% domain)...")
     stage1_train = mix_datasets(general_train, domain_train, 0.5)
     stage1_val = mix_datasets(general_val, domain_val, 0.5)
-    save_jsonl(stage1_train, f"{args.output_dir}/stage1/train.jsonl")
-    save_jsonl(stage1_val, f"{args.output_dir}/stage1/val.jsonl")
+    save_jsonl(stage1_train, f"{args.output_dir}/stage1/{dynamic_train_filename}")
+    save_jsonl(stage1_val, f"{args.output_dir}/stage1/{dynamic_val_filename}")
 
     # 阶段2: 20/80 混合
     print("[3/4] Creating Stage 2 data (20% general + 80% domain)...")
     stage2_train = mix_datasets(general_train, domain_train, 0.2)
     stage2_val = mix_datasets(general_val, domain_val, 0.2)
-    save_jsonl(stage2_train, f"{args.output_dir}/stage2/train.jsonl")
-    save_jsonl(stage2_val, f"{args.output_dir}/stage2/val.jsonl")
+    save_jsonl(stage2_train, f"{args.output_dir}/stage2/{dynamic_train_filename}")
+    save_jsonl(stage2_val, f"{args.output_dir}/stage2/{dynamic_val_filename}")
 
     # 阶段3: 纯专业数据
     print("[4/4] Creating Stage 3 data (100% domain)...")
-    save_jsonl(domain_train, f"{args.output_dir}/stage3/train.jsonl")
-    save_jsonl(domain_val, f"{args.output_dir}/stage3/val.jsonl")
+    save_jsonl(domain_train, f"{args.output_dir}/stage3/{dynamic_train_filename}")
+    save_jsonl(domain_val, f"{args.output_dir}/stage3/{dynamic_val_filename}")
 
     print("=" * 60)
     print("✓ Data preparation completed!")

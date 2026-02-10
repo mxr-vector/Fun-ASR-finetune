@@ -296,7 +296,7 @@ uv run tools/prepare_staged_data.py \
 paraformer训练运行数据准备
 
 ```bash
-uv run prepare_staged_data.py \
+uv run tools/prepare_staged_data.py \
   --general_train data/general/train/wav_paraformer.jsonl \
   --general_val data/general/valid/wav_paraformer.jsonl \
   --domain_train data/domain/train/wav_paraformer.jsonl \
@@ -319,6 +319,8 @@ uv run prepare_staged_data.py \
 ```
 
 ![img3](resource/image3.png)
+
+![img3-](resource/image3-.png)
 
 ### 4.一键微调训练
 

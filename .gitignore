@@ -3,6 +3,8 @@ __pycache__/
 build/
 dist/
 data/
+data-en/
+data-zh/
 log/
 test*.py
 dataset/

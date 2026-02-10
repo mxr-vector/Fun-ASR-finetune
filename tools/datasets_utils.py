@@ -410,7 +410,9 @@ def csv2text(csv_file: str):
             line = line.strip()
             if line:
                 file_path, text = line.split(",", 1)
-                file_name = file_path.split("/")[-1]  # 取最后一个 / 之后的文件名
+                file_name = file_path.split("/")[-1].removesuffix(
+                    ".wav"
+                )  # 取最后一个 / 之后的文件名,并去掉.wav后缀
                 f_out.write(f"{file_name} {text}\n")
 
     print(f"转换完成，TXT 文件路径：{txt_file}")
@@ -460,27 +462,31 @@ def flatten_subdirs_to_root(root_dir: str, remove_empty_dirs: bool = True):
 
 
 if __name__ == "__main__":
+    from pathlib import Path
 
-    # input_dir = r"D:\训练音频\语音\AliMeeting\Train_Ali_far\audio_dir"
-    # print(get_total_wav_duration(input_dir))
+    target_dir = Path(r"data-en/general/valid")
+    # 获取目录下音频总时长
+    # input_dir = target_dir / "audio_dir"
+    # print(get_total_wav_duration(str(input_dir)))
 
-    # csv2text("data/speech_asr_aishell_trainsets.csv")
+    # 生成txt文件
+    csv2text(str(target_dir / "wav.csv"))
 
     # 生成scp文件
-    input_txt_path = r"data/general/test/wav.txt"
+    input_txt_path = target_dir / "wav.txt"
     generate_wav_scp(
         input_txt_path,
-        output_scp_path=str(Path(input_txt_path).with_suffix(".scp")),
-        audio_prefix=r"data/general/test/wav",
+        output_scp_path=str(input_txt_path.with_suffix(".scp")),
+        audio_prefix=str(target_dir / "wav"),
     )
 
     # flatten_subdirs_to_root(r"data/general/train/wav")
     # JSONL转Whisper数据集
     try:
-        input = r"E:\work\demo\mxr-ai-model-base\train_model\datasets\train_en\train\dataset.json"
+        input = target_dir / "dataset.json"
         # jsonl2whisper_dataset(
-        #     input_jsonl=input,
-        #     audio_path_prefix=r"E:\work\demo\mxr-ai-model-base\train_model\datasets\train_en\valid\wav",
+        #     input_jsonl=str(target_dir),
+        #     audio_path_prefix=str(target_dir / "wav"),
         # )
 
         # json_compress(
@@ -494,9 +500,9 @@ if __name__ == "__main__":
         # )
 
         # excel2jsonl(
-        #     input_excel=r"E:\work\demo\mxr-ai-model-base\train_model\datasets\train_en\test\test.xlsx",
+        #     input_excel=str(target_dir / "test.xlsx"),
         #     output_jsonl=r"./dataset_from_excel.jsonl",
-        #     audio_path_prefix=r"/workspace/models/train_en/test/wav",
+        #     audio_path_prefix=str(target_dir / "wav"),
         # )
     except Exception as e:
         logging.error(f"程序执行失败: {str(e)}")

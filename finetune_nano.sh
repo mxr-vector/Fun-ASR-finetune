@@ -34,7 +34,7 @@ case ${STAGE} in
         train_data="${data_dir}/stage1/train_nano.jsonl"
         val_data="${data_dir}/stage1/val_nano.jsonl"
         max_epoch=6
-        learning_rate=0.0002
+        learning_rate=0.00015
         output_dir="./outputs/stage1_warmup"
         MODEL_INIT_PARAM="++model=${model_name_or_model_dir}"
         # Stage 1: 只训练adaptor
@@ -55,8 +55,8 @@ case ${STAGE} in
         
         train_data="${data_dir}/stage2/train_nano.jsonl"
         val_data="${data_dir}/stage2/val_nano.jsonl"
-        max_epoch=6
-        learning_rate=0.0001
+        max_epoch=5
+        learning_rate=0.00006
         output_dir="./outputs/stage2_adaptation"
         MODEL_INIT_PARAM="++init_param=${stage1_best_model}"
         # Stage 2: 只训练adaptor
@@ -77,8 +77,8 @@ case ${STAGE} in
         
         train_data="${data_dir}/stage3/train_nano.jsonl"
         val_data="${data_dir}/stage3/val_nano.jsonl"
-        max_epoch=10
-        learning_rate=0.00005
+        max_epoch=8
+        learning_rate=0.00002
         output_dir="./outputs/stage3_finetune"
         MODEL_INIT_PARAM="++init_param=${stage2_best_model}"
         # Stage 3: 冻结encoder.llm原始权重 LoRA微调LLM
@@ -88,8 +88,8 @@ case ${STAGE} in
 ++llm_conf.freeze=false \
 ++llm_conf.use_lora=true \
 ++llm_conf.lora_conf.freeze_lora=false \
-++llm_conf.lora_conf.r=32 \
-++llm_conf.lora_conf.lora_alpha=64 \
+++llm_conf.lora_conf.r=16 \
+++llm_conf.lora_conf.lora_alpha=32 \
 ++scheduler_conf.warmup_steps=500
 "
         ;;
@@ -155,21 +155,21 @@ ${FREEZE_PARAMS} \
 ++dataset_conf.data_split_num=1 \
 ++dataset_conf.batch_sampler="BatchSampler" \
 ++dataset_conf.batch_type="token" \
-++dataset_conf.batch_size=12000 \
+++dataset_conf.batch_size=14000 \
 ++dataset_conf.sort_size=1024 \
 ++dataset_conf.num_workers=4 \
 ++dataset_conf.shuffle=true \
 ++train_conf.max_epoch=${max_epoch} \
 ++train_conf.log_interval=1 \
-++train_conf.validate_interval=2000 \
-++train_conf.save_checkpoint_interval=2000 \
+++train_conf.validate_interval=1000 \
+++train_conf.save_checkpoint_interval=1000 \
 ++train_conf.keep_nbest_models=10 \
 ++train_conf.avg_nbest_model=5 \
 ++train_conf.use_deepspeed=false \
 ++train_conf.use_bf16=true \
 ++train_conf.effective_save_name_excludes="None" \
 ++train_conf.find_unused_parameters=true \
-++train_conf.early_stopping_patience=5 \
+++train_conf.early_stopping_patience=3 \
 ++enable_tf32=true \
 ++train_conf.deepspeed_config=${deepspeed_config} \
 ++optim_conf.lr=${learning_rate} \

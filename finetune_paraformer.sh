@@ -33,8 +33,10 @@ train_run(){
     VAL_DATA=$3
     MAX_EPOCH=$4
     LR=$5
-    OUTPUT_DIR=$6
-    INIT_CKPT=$7  # stage1 或 stage2 checkpoint
+    BATCH_SIZE=$6
+    WARMUP_STEPS=$7
+    OUTPUT_DIR=$8
+    INIT_CKPT=$9  # stage1 或 stage2 checkpoint
 
     mkdir -p ${OUTPUT_DIR}
     log_file="${OUTPUT_DIR}/log.txt"
@@ -45,6 +47,8 @@ train_run(){
     echo "Valid data: ${VAL_DATA}"
     echo "Output dir: ${OUTPUT_DIR}"
     echo "Learning rate: ${LR}"
+    echo "Batch size: ${BATCH_SIZE}"
+    echo "Warmup steps: ${WARMUP_STEPS}"
     echo "=============================="
 
     # 判定是否有 checkpoint，用 init_param 加载
@@ -72,14 +76,14 @@ train_run(){
     ++dataset_conf.data_split_num=1 \
     ++dataset_conf.batch_sampler="BatchSampler" \
     ++dataset_conf.batch_type="token" \
-    ++dataset_conf.batch_size=12000 \
+    ++dataset_conf.batch_size=${BATCH_SIZE} \
     ++dataset_conf.sort_size=2048 \
     ++dataset_conf.num_workers=4 \
     ++dataset_conf.shuffle=true \
     ++train_conf.max_epoch=${MAX_EPOCH} \
     ++train_conf.log_interval=1 \
-    ++train_conf.validate_interval=2000 \
-    ++train_conf.save_checkpoint_interval=2000 \
+    ++train_conf.validate_interval=1000 \
+    ++train_conf.save_checkpoint_interval=1000 \
     ++train_conf.keep_nbest_models=10 \
     ++train_conf.avg_nbest_model=5 \
     ++train_conf.use_deepspeed=false \
@@ -89,6 +93,7 @@ train_run(){
     ++enable_tf32=true \
     ++train_conf.deepspeed_config=${deepspeed_config} \
     ++optim_conf.lr=${LR} \
+    ++scheduler_conf.warmup_steps=${WARMUP_STEPS} \
     ++output_dir="${OUTPUT_DIR}" &> ${log_file}
 
     if [ $? -eq 0 ]; then
@@ -104,23 +109,23 @@ train_run(){
 train_run "Stage1_Warmup" \
 "${data_dir}/stage1/train_paraformer.jsonl" \
 "${data_dir}/stage1/val_paraformer.jsonl" \
-15 0.0001 \
+10 0.00008 12000 6000 \
 "./outputs/stage1_warmup" \
 ""
 
-# Stage 2: Domain Adaptation (20% general + 80% domain)
+# Stage 2: Domain Adaptation (30% general + 70% domain)
 train_run "Stage2_Adaptation" \
 "${data_dir}/stage2/train_paraformer.jsonl" \
 "${data_dir}/stage2/val_paraformer.jsonl" \
-20 0.0002 \
+15 0.00004 11000 5000 \
 "./outputs/stage2_adaptation" \
 "${stage1_ckpt}"
 
-# Stage 3: Fine-tuning (100% domain) LoRA 微调
+# Stage 3: Fine-tuning (20% general + 80% domain)
 train_run "Stage3_Finetune" \
 "${data_dir}/stage3/train_paraformer.jsonl" \
 "${data_dir}/stage3/val_paraformer.jsonl" \
-25 0.0001 \
+20 0.00002 11000 4000 \
 "./outputs/stage3_finetune" \
 "${stage2_ckpt}"
 

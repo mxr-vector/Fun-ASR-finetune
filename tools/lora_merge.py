@@ -61,8 +61,8 @@ try:
     lora_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
         inference_mode=False,
-        r=32,
-        lora_alpha=64,
+        r=16,
+        lora_alpha=32,
         lora_dropout=0.05,
         target_modules=["q_proj", "v_proj"],
         bias="none",

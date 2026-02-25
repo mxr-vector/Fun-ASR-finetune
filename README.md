@@ -485,7 +485,7 @@ uv run train_log_analyzer.py log.txt
 ## Remarkable Third-Party Work
 
 - vLLM (GPU) Deployment Best Practices: An accelerated implementation of Fun-ASR using vLLM. [Repository](https://github.com/yuekaizhang/Fun-ASR-vllm)
-- vLLM (GGUF) Best Inference Practices:[Repository](https://github.com/HaujetZhao/Fun-ASR-GGUF)
+- llama（GGUF） (GGUF) Best Inference Practices:[Repository](https://github.com/HaujetZhao/Fun-ASR-GGUF)
 
 ## Citations
 

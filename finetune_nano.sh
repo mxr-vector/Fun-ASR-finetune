@@ -33,8 +33,8 @@ case ${STAGE} in
         echo "Stage 1: Warmup (50% general + 50% domain)"
         train_data="${data_dir}/stage1/train_nano.jsonl"
         val_data="${data_dir}/stage1/val_nano.jsonl"
-        max_epoch=6
-        learning_rate=0.00015
+        max_epoch=8
+        learning_rate=0.0002
         output_dir="./outputs/stage1_warmup"
         MODEL_INIT_PARAM="++model=${model_name_or_model_dir}"
         # Stage 1: 只训练adaptor
@@ -55,8 +55,8 @@ case ${STAGE} in
         
         train_data="${data_dir}/stage2/train_nano.jsonl"
         val_data="${data_dir}/stage2/val_nano.jsonl"
-        max_epoch=5
-        learning_rate=0.00006
+        max_epoch=10
+        learning_rate=0.00015
         output_dir="./outputs/stage2_adaptation"
         MODEL_INIT_PARAM="++init_param=${stage1_best_model}"
         # Stage 2: 只训练adaptor
@@ -77,8 +77,8 @@ case ${STAGE} in
         
         train_data="${data_dir}/stage3/train_nano.jsonl"
         val_data="${data_dir}/stage3/val_nano.jsonl"
-        max_epoch=8
-        learning_rate=0.00002
+        max_epoch=15
+        learning_rate=0.0001
         output_dir="./outputs/stage3_finetune"
         MODEL_INIT_PARAM="++init_param=${stage2_best_model}"
         # Stage 3: 冻结encoder.llm原始权重 LoRA微调LLM
@@ -169,7 +169,7 @@ ${FREEZE_PARAMS} \
 ++train_conf.use_bf16=true \
 ++train_conf.effective_save_name_excludes="None" \
 ++train_conf.find_unused_parameters=true \
-++train_conf.early_stopping_patience=3 \
+++train_conf.early_stopping_patience=5 \
 ++enable_tf32=true \
 ++train_conf.deepspeed_config=${deepspeed_config} \
 ++optim_conf.lr=${learning_rate} \

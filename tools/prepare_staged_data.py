@@ -105,8 +105,8 @@ def main():
     print("=" * 60)
 
     # 加载数据
-    dynamic_train_filename = args.general_train.split("/")[-1].replace("wav","train")
-    dynamic_val_filename = args.general_val.split("/")[-1].replace("wav","val")
+    dynamic_train_filename = args.general_train.split("/")[-1].replace("wav", "train")
+    dynamic_val_filename = args.general_val.split("/")[-1].replace("wav", "val")
     print("[1/4] Loading data...")
     general_train = load_jsonl(args.general_train)
     general_val = load_jsonl(args.general_val)
@@ -125,17 +125,19 @@ def main():
     save_jsonl(stage1_train, f"{args.output_dir}/stage1/{dynamic_train_filename}")
     save_jsonl(stage1_val, f"{args.output_dir}/stage1/{dynamic_val_filename}")
 
-    # 阶段2: 20/80 混合
-    print("[3/4] Creating Stage 2 data (20% general + 80% domain)...")
-    stage2_train = mix_datasets(general_train, domain_train, 0.2)
-    stage2_val = mix_datasets(general_val, domain_val, 0.2)
+    # 阶段2: 30/70 混合（保留更多通用数据，平滑过渡）
+    print("[3/4] Creating Stage 2 data (30% general + 70% domain)...")
+    stage2_train = mix_datasets(general_train, domain_train, 0.3)
+    stage2_val = mix_datasets(general_val, domain_val, 0.3)
     save_jsonl(stage2_train, f"{args.output_dir}/stage2/{dynamic_train_filename}")
     save_jsonl(stage2_val, f"{args.output_dir}/stage2/{dynamic_val_filename}")
 
-    # 阶段3: 纯专业数据
-    print("[4/4] Creating Stage 3 data (100% domain)...")
-    save_jsonl(domain_train, f"{args.output_dir}/stage3/{dynamic_train_filename}")
-    save_jsonl(domain_val, f"{args.output_dir}/stage3/{dynamic_val_filename}")
+    # 阶段3: 75% 专业 + 25% 通用（防止 LoRA 微调 LLM 时领域过拟合）
+    print("[4/4] Creating Stage 3 data (25% general + 75% domain)...")
+    stage3_train = mix_datasets(general_train, domain_train, 0.25)
+    stage3_val = mix_datasets(general_val, domain_val, 0.25)
+    save_jsonl(stage3_train, f"{args.output_dir}/stage3/{dynamic_train_filename}")
+    save_jsonl(stage3_val, f"{args.output_dir}/stage3/{dynamic_val_filename}")
 
     print("=" * 60)
     print("✓ Data preparation completed!")

@@ -487,6 +487,8 @@ uv run train_log_analyzer.py log.txt
 - vLLM (GPU) 最佳部署实践: 使用 vLLM 实现对 Fun-ASR 的加速. [Repository](https://github.com/yuekaizhang/Fun-ASR-vllm)
 - llama（GGUF）最佳推理实践：[Repository](https://github.com/HaujetZhao/Fun-ASR-GGUF)
 
+- Qwen3-ASR 训练项目：[Repository](https://github.com/QwenLM/Qwen3-ASR)
+
 ## Citations
 
 ```bibtex

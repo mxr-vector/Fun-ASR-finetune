@@ -32,6 +32,8 @@ Model Repository: [modelscope](https://www.modelscope.cn/models/FunAudioLLM/Fun-
 Online Experience:
 [ModelScope Community Space](https://modelscope.cn/studios/FunAudioLLM/Fun-ASR-Nano), [huggingface space](https://huggingface.co/spaces/FunAudioLLM/Fun-ASR-Nano)
 
+- Qwen3-ASR Repository：[Repository](https://github.com/QwenLM/Qwen3-ASR)
+
 </div>
 
 |                                                                           Model Name                                                                            |                                                                                                                                                                                                       Task Details                                                                                                                                                                                                       |         Training Data          | Parameters |

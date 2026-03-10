@@ -247,7 +247,7 @@ G74916-G83238 test集
 训练轮数：5-10 epochs
 目标：最大化领域准确率
 
-为了降低数据准备难度。支持混合采样数据。
+为了降低数据准备难度。支持专业数据和通用数据混合采样。
 
 ### 1.生成符合要求的scp文件
 
@@ -289,6 +289,12 @@ scp2jsonl ++scp_file_list='["data/domain/train/wav.scp", "data/domain/train/wav.
 
 ### 3.使用prepare_staged_data.py混合数据集
 
+若数据采用**多语言隔离存储结构**，可按以下方式处理，使流程更加规范：
+
+* **若多语言数据已混合存储**：可直接在当前数据目录执行相应的混合与处理操作，无需额外步骤。
+* **若不同语言数据分别存放在独立目录中**：应先在各自语言目录内分别执行数据混合操作；随后手动创建 `staged` 目录，并将各语言处理后的数据统一汇总至该目录中，以完成多语言数据的整合。
+
+
 nano训练运行数据准备
 
 ```bash
@@ -311,6 +317,9 @@ uv run tools/prepare_staged_data.py \
   --output_dir data/staged
 ```
 
+qwen3-asr训练运行数据准备
+若你路径有
+
 ```bash
 # 输出结果：
 # data/staged/
@@ -323,6 +332,32 @@ uv run tools/prepare_staged_data.py \
 # └── stage3/
 #     ├── train.jsonl (纯专业)
 #     └── val.jsonl
+# data-en 英文数据集
+# ├── domain
+# │   ├── test
+# │   ├── train
+# │   └── valid
+# ├── general
+# │   ├── test
+# │   ├── train
+# │   └── valid
+# └── staged
+#     ├── stage1
+#     ├── stage2
+#     └── stage3
+#data-zh 中文数据集
+# ├── domain
+# │   ├── test
+# │   ├── train
+# │   └── valid
+# ├── general
+# │   ├── test
+# │   ├── train
+# │   └── valid
+# └── staged
+#     ├── stage1
+#     ├── stage2
+#     └── stage3
 ```
 
 ![img3](resource/image3.png)
@@ -333,6 +368,7 @@ uv run tools/prepare_staged_data.py \
 
 nano训练脚本参考 finetune_nano.sh
 paraformer训练脚本参考 finetune_paraformer.sh
+qwen3-asr训练脚本参考 finetune_qwen3asr.sh
 
 ```bash
 # 预训练模型路径
@@ -357,6 +393,8 @@ FREEZE_PARAMS="
 nohup bash auto_finetune.sh > full_train_nano.log 2>&1 &
 # paraformer自回归模型训练
 nohup bash finetune_paraformer.sh > full_train_paraformer.log 2>&1 &
+# qwen3-asr模型训练
+nohup bash finetune_qwen3asr.sh > full_train_qwen3asr.log 2>&1 &
 ```
 
 ## Docker训练
@@ -486,7 +524,6 @@ uv run train_log_analyzer.py log.txt
 
 - vLLM (GPU) 最佳部署实践: 使用 vLLM 实现对 Fun-ASR 的加速. [Repository](https://github.com/yuekaizhang/Fun-ASR-vllm)
 - llama（GGUF）最佳推理实践：[Repository](https://github.com/HaujetZhao/Fun-ASR-GGUF)
-
 - Qwen3-ASR 训练项目：[Repository](https://github.com/QwenLM/Qwen3-ASR)
 
 ## Citations

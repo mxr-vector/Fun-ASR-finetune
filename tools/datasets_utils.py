@@ -460,27 +460,51 @@ def flatten_subdirs_to_root(root_dir: str, remove_empty_dirs: bool = True):
 
     print(f"文件已全部提取到顶层目录: {root_dir}")
 
+def paraformerJsonl2Qwen3ASRJsonl(input_file: str, output_file: str):
+    """
+    基于生成的paraformer输入格式转为qwen3-asr输入格式
+    """
+    with open(input_file, 'r', encoding='utf-8') as fin, open(output_file, 'w', encoding='utf-8') as fout:
+        for line in fin:
+            line = line.strip()
+            if not line:
+                continue
+            data = json.loads(line)
+            source = data["source"]
+            target = data["target"]
+            if source.startswith("data-en"):
+                lang = "English"
+            elif source.startswith("data-zh"):
+                lang = "Chinese"
+            else:
+                lang = "None"
+            out = {"audio": source, "text": f"language {lang}<asr_text>{target}"}
+            fout.write(json.dumps(out, ensure_ascii=False) + '\n')
+
 
 if __name__ == "__main__":
     from pathlib import Path
 
-    target_dir = Path(r"data-en/general/valid")
+    target_dir = Path(r"data/staged/stage1")
     # 获取目录下音频总时长
     # input_dir = target_dir / "audio_dir"
     # print(get_total_wav_duration(str(input_dir)))
 
     # 生成txt文件
-    csv2text(str(target_dir / "wav.csv"))
+    # csv2text(str(target_dir / "wav.csv"))
 
     # 生成scp文件
-    input_txt_path = target_dir / "wav.txt"
-    generate_wav_scp(
-        input_txt_path,
-        output_scp_path=str(input_txt_path.with_suffix(".scp")),
-        audio_prefix=str(target_dir / "wav"),
-    )
+    # input_txt_path = target_dir / "wav.txt"
+    # generate_wav_scp(
+    #     input_txt_path,
+    #     output_scp_path=str(input_txt_path.with_suffix(".scp")),
+    #     audio_prefix=str(target_dir / "wav"),
+    # )
 
     # flatten_subdirs_to_root(r"data/general/train/wav")
+
+    # paraformer输入数据集转为qwen3-asr
+    paraformerJsonl2Qwen3ASRJsonl(str(target_dir / "train_paraformer.jsonl"),str(target_dir / "train_qwen3asr.jsonl"))
     # JSONL转Whisper数据集
     try:
         input = target_dir / "dataset.json"

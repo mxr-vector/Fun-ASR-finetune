@@ -291,6 +291,11 @@ scp2jsonl ++scp_file_list='["data/domain/train/wav.scp", "data/domain/train/wav.
 
 ### 3.Use prepare_staged_data.py to blend datasets
 
+If data employs a **multilingual isolated storage structure**, the following approach can be adopted to standardize the workflow:
+
+* **If multilingual data is already mixed in storage**: Perform the corresponding mixing and processing operations directly within the current data directory without additional steps.
+* **If different language data is stored in separate directories**: First perform data mixing operations within each language directory. Then manually create a `staged` directory and consolidate the processed data from all languages into this directory to complete the multilingual data integration.
+
 Operational Data Preparation for Nano
 
 ```bash
@@ -317,23 +322,52 @@ uv run prepare_staged_data.py \
 # Output results：
 # data/staged/
 # ├── stage1/
-# │   ├── train.jsonl (mixed50/50)
+# │   ├── train.jsonl (混合50/50)
 # │   └── val.jsonl
 # ├── stage2/
-# │   ├── train.jsonl (mixed20/80)
+# │   ├── train.jsonl (混合20/80)
 # │   └── val.jsonl
 # └── stage3/
 #     ├── train.jsonl (纯专业)
 #     └── val.jsonl
+# data-en 英文数据集
+# ├── domain
+# │   ├── test
+# │   ├── train
+# │   └── valid
+# ├── general
+# │   ├── test
+# │   ├── train
+# │   └── valid
+# └── staged
+#     ├── stage1
+#     ├── stage2
+#     └── stage3
+#data-zh 中文数据集
+# ├── domain
+# │   ├── test
+# │   ├── train
+# │   └── valid
+# ├── general
+# │   ├── test
+# │   ├── train
+# │   └── valid
+# └── staged
+#     ├── stage1
+#     ├── stage2
+#     └── stage3
 ```
 
 ![img3](resource/image3.png)
+
+![img3-](resource/image3-.png)
+
 
 ### 4.One-Click Fine-Tuning Training
 
 nano training script reference: finetune_nano.sh
 paraformer training script reference: finetune_paraformer.sh
-
+qwen3-asr training  script reference: finetune_qwen3asr.sh
 ```bash
 # Pre-trained Model Path
 model_name_or_model_dir="models/Fun-ASR-Nano-2512"
@@ -357,6 +391,8 @@ For reference `https://github.com/modelscope/FunASR/blob/main/examples/industria
 nohup bash auto_finetune.sh > full_train_nano.log 2>&1 &
 # Paraformer Autoregressive Model Training
 nohup bash finetune_paraformer.sh > full_train_paraformer.log 2>&1 &
+# qwen3-asr Model Training
+nohup bash finetune_qwen3asr.sh > full_train_qwen3asr.log 2>&1 &
 ```
 
 ## Docker Training

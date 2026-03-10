@@ -28,8 +28,8 @@ def load_finetuned_model(
             use_lora=use_lora,
             lora_conf=(
                 dict(
-                    r=32,
-                    lora_alpha=64,
+                    r=16,
+                    lora_alpha=32,
                 )
                 if use_lora
                 else {}

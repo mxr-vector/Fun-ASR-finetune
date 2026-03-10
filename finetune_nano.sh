@@ -88,8 +88,8 @@ case ${STAGE} in
 ++llm_conf.freeze=false \
 ++llm_conf.use_lora=true \
 ++llm_conf.lora_conf.freeze_lora=false \
-++llm_conf.lora_conf.r=8 \
-++llm_conf.lora_conf.lora_alpha=16 \
+++llm_conf.lora_conf.r=16 \
+++llm_conf.lora_conf.lora_alpha=32 \
 ++scheduler_conf.warmup_steps=500
 "
         ;;

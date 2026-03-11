@@ -9,7 +9,7 @@ set -euo pipefail
 
 workspace=$(pwd)
 
-export CUDA_VISIBLE_DEVICES="0"
+export CUDA_VISIBLE_DEVICES="0,1"
 gpu_num=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F "," '{print NF}')
 
 # ─── 路径配置 ────────────────────────────────────────────────────────────────
@@ -119,9 +119,9 @@ if [ "${START_STAGE}" -le 1 ]; then
         --input_model  "${MODEL_PATH}" \
         --batch_size   32 \
         --grad_acc     4 \
-        --lr           2e-5 \
-        --epochs       1 \
-        --save_steps   200 \
+        --lr           3e-5 \
+        --epochs       3 \
+        --save_steps   400 \
         --warmup_ratio 0.05
 fi
 
@@ -136,9 +136,9 @@ if [ "${START_STAGE}" -le 2 ]; then
         --input_model  "${STAGE1_CKPT}" \
         --batch_size   16 \
         --grad_acc     8 \
-        --lr           8e-6 \
-        --epochs       2 \
-        --save_steps   100 \
+        --lr           1e-5 \
+        --epochs       4 \
+        --save_steps   200 \
         --warmup_ratio 0.03
 fi
 
@@ -153,9 +153,9 @@ if [ "${START_STAGE}" -le 3 ]; then
         --input_model  "${STAGE2_CKPT}" \
         --batch_size   8 \
         --grad_acc     16 \
-        --lr           2e-6 \
-        --epochs       3 \
-        --save_steps   50 \
+        --lr           5e-6 \
+        --epochs       5 \
+        --save_steps   100 \
         --warmup_ratio 0.02
 fi
 

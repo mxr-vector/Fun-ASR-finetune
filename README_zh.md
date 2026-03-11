@@ -13,7 +13,7 @@ uv pip install transformers==4.57.6 peft funasr==1.3.1
 
 # 训练qwen3-asr 需要额外安装以下插件
 uv pip install datasets qwen_asr
-# uv pip install -U flash-attn --no-build-isolation
+uv pip install -U flash-attn --no-build-isolation
 ```
 
 <div align="center">
@@ -406,11 +406,14 @@ nohup bash finetune_qwen3asr.sh > full_train_qwen3asr.log 2>&1 &
 Docker 训练容器被设计为一次性使用，因此在训练过程中请务必妥善备份并持久化数据卷（包括模型权重、日志及中间产物）。训练完成后，请重新创建并启动新的容器用于模型评估或推理，而不要复用原训练容器。这样做符合容器不可变（Immutable Infrastructure）和职责单一（Single Responsibility）的设计原则，有助于清晰区分训练与评估阶段，便于项目生命周期的检测与管理，同时降低使用者的心智负担，并提升系统的可维护性与可复现性。
 
 ```bash
-# 构建镜像
+# 构建镜像 nano/paraformer
 docker build -t funasr-finetune:Dockerfile .
-# 需要使用flash-attn加速的 至少4核cpu
-docker build --build-arg FLASH_ATTN=1 -t funasr-finetune:Dockerfile .
 
+# qwen3-asr 需要使用flash-attn加速的 至少4核cpu
+# cuda工具链 https://developer.nvidia.com/cuda-12-8-0-download-archive
+docker build --build-arg FLASH_ATTN=1 -f Dockerfile-deepSpeed -t funasr-finetune:Dockerfile-deepSpeed .
+
+# 清理冗余构建缓存层
 docker builder prune --filter "until=24h"
 ```
 
@@ -495,7 +498,37 @@ nohup bash finetune_paraformer.sh > full_train.log 2>&1 &
 
 # Qwen3-ASR容器训练
 ```bash
+mkdir nano-finetune
 
+# 启动临时容器拷贝文件到本地
+docker run -it --name nano-finetune funasr-finetune:Dockerfile /bin/bash
+
+# 开新终端 拷贝数据 拷贝一些你想自己调试的文件
+docker cp nano-finetune:/workspace $PWD
+
+# 退出容器并删除临时容器
+docker rm -f nano-finetune
+
+mkdir $PWD/workspace/models $PWD/workspace/data  $PWD/workspace/outputs
+# 拷贝模型到本地
+mv <模型地址> $PWD/workspace/models
+
+# 拷贝数据到本地
+mv <数据地址> $PWD/workspace/data
+
+# 启动
+docker run -it --network=host --shm-size=16g \
+--gpus all --cpus=8 \
+-e LANG=C.UTF-8 \
+-e LC_ALL=C.UTF-8 \
+-e NVIDIA_VISIBLE_DEVICES=all \
+-e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+-v $PWD/workspace:/workspace \
+--restart=on-failure \
+--name nano-finetune funasr-finetune:Dockerfile /bin/bash
+
+# 开启训练
+nohup bash auto_finetune.sh > full_train.log 2>&1 &
 ```
 
 ## nano合并模型

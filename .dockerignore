@@ -26,6 +26,7 @@ data/
 data-en/
 data-zh/
 outputs/
+resource/
 
 # 压缩包或临时文件
 *.tar

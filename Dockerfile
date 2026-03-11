@@ -52,20 +52,11 @@ COPY pyproject.toml .python-version ./
 RUN uv sync --extra cu128 --active
 RUN uv pip install transformers==4.57.6 peft funasr==1.3.1
 
-# 判断是否为空，只有非空才安装 flash-attn
-RUN if [ -n "$FLASH_ATTN" ]; then \
-    echo "Installing flash-attn..."; \
-    uv pip install \
-    https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiTRUE-cp311-cp311-linux_x86_64.whl; \
-    uv pip install flash-attn datasets qwen_asr; \
-    else \
-    echo "Skipping flash-attn installation"; \
-    fi
 # 再拷贝项目代码
 COPY . .
 
 # 给 run.sh 可执行权限
-RUN chmod +x auto_finetune.sh finetune_nano.sh finetune_paraformer.sh finetune_qwen3asr.sh
+RUN chmod +x auto_finetune.sh finetune_nano.sh finetune_paraformer.sh
 
 # uv 会创建 .venv，这里将其添加到 PATH
 ENV PATH="/workspace/.venv/bin:${PATH}"

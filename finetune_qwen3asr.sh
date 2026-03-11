@@ -9,13 +9,13 @@ set -euo pipefail
 
 workspace=$(pwd)
 
-export CUDA_VISIBLE_DEVICES="0,1"
+export CUDA_VISIBLE_DEVICES="0"
 gpu_num=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F "," '{print NF}')
 
 # ─── 路径配置 ────────────────────────────────────────────────────────────────
 MODEL_PATH="models/Qwen3-ASR-1.7B"
 DATA_ROOT="./data/staged"
-OUTPUT_ROOT="./output/staged"
+OUTPUT_ROOT="./outputs/staged"
 
 # ─── 各阶段最优 checkpoint 路径（供下一阶段加载） ───────────────────────────
 STAGE1_CKPT="${OUTPUT_ROOT}/stage1/best_model"
@@ -76,11 +76,11 @@ train_run() {
 
     # resume_ckpt 非空时追加 --resume_from_checkpoint，否则该行不展开
     torchrun "${DISTRIBUTED_ARGS[@]}" \
-        qwen3_asr_sft.py \
+        tools/qwen3_asr_sft.py \
             --model_path            "${input_model}" \
             ${resume_ckpt:+--resume_from_checkpoint "${resume_ckpt}"} \
-            --train_file            "${stage_data}/train.jsonl" \
-            --eval_file             "${stage_data}/val.jsonl" \
+            --train_file            "${stage_data}/train_qwen3asr.jsonl" \
+            --eval_file             "${stage_data}/val_qwen3asr.jsonl" \
             --output_dir            "${stage_out}" \
             --batch_size            "${batch_size}" \
             --grad_acc              "${grad_acc}" \

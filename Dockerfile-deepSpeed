@@ -1,0 +1,64 @@
+# DeepSpeed 运行时需要 CUDA_HOME，必须用 cuda 镜像
+FROM nvidia/cuda:12.8.0-cudnn-devel-ubuntu22.04 AS base
+LABEL maintainer="YuanJie" \
+    description="An Acoustic Feature Detection Mirror Construction Project" \
+    license="MIT" \
+    email="wangjh0825@qq.com"
+
+ARG FLASH_ATTN
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN cat > /etc/apt/sources.list <<'EOF'
+deb http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ jammy-security main restricted universe multiverse
+EOF
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ffmpeg \
+    python3.11 \
+    python3.11-dev \
+    python3-pip \
+    python3.11-venv \
+    curl \
+    procps \
+    ca-certificates \
+    git && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
+
+ENV UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+ENV UV_HTTP_TIMEOUT=600
+RUN python3 -m pip install --upgrade pip -i ${UV_INDEX_URL} && \
+    python3 -m pip install -U uv -i ${UV_INDEX_URL}
+
+ENV PATH="/root/.local/bin:${PATH}"
+# DeepSpeed 运行时通过 CUDA_HOME 定位 CUDA 工具链
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH="${CUDA_HOME}/bin:/root/.local/bin:${PATH}"
+ENV LD_LIBRARY_PATH="${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}"
+
+# 编译 flash-attn 时限制并行数，避免 WSL OOM 崩溃
+ENV MAX_JOBS=4
+
+WORKDIR /workspace
+
+COPY pyproject.toml .python-version ./
+
+RUN uv sync --extra cu128
+
+RUN uv pip install transformers==4.57.6 peft funasr==1.3.1
+
+RUN uv pip install --no-cache-dir flash-attn --no-build-isolation && uv pip install datasets qwen_asr
+
+COPY . .
+
+RUN chmod +x auto_finetune.sh finetune_nano.sh finetune_paraformer.sh finetune_qwen3asr.sh
+
+ENV PATH="/workspace/.venv/bin:${PATH}"
+
+CMD ["/bin/bash"]

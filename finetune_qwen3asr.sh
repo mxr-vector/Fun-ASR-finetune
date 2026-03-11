@@ -13,7 +13,8 @@ export CUDA_VISIBLE_DEVICES="0,1"
 gpu_num=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F "," '{print NF}')
 
 # ─── 路径配置 ────────────────────────────────────────────────────────────────
-MODEL_PATH="models/Qwen3-ASR-1.7B"
+MODELS_DIR="$HOME/mydata/models"
+MODEL_PATH="${MODELS_DIR}/Qwen3-ASR-1.7B"
 DATA_ROOT="./data/staged"
 OUTPUT_ROOT="./outputs/staged"
 

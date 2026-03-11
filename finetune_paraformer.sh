@@ -9,7 +9,8 @@ gpu_num=$(echo $CUDA_VISIBLE_DEVICES | awk -F "," '{print NF}')
 
 # 模型注册名
 # model_name="/workspace/models/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
-model_name="models/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
+MODELS_DIR="$HOME/mydata/models"
+model_name="${MODELS_DIR}/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
 
 # 数据目录，分阶段
 data_dir="data/staged"

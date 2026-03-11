@@ -9,8 +9,11 @@ Fun-ASR is an end-to-end speech recognition large model launched by Tongyi Lab. 
 # Project Kickoff Briefing
 ```bash
 uv sync --extra cu128
-# uv sync --extra cu130
-uv pip install transformers peft
+uv pip install transformers==4.57.6 peft
+
+# Training qwen3-asr requires the additional installation of the following plugins:
+uv pip install datasets qwen_asr
+# uv pip install -U flash-attn --no-build-isolation
 ```
 
 <div align="center">

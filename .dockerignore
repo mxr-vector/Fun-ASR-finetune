@@ -1,14 +1,37 @@
-# 避免dockerfile构建后，拷贝剩余文件拷贝到镜像中覆盖，导致venv重建
-.venv
+# Python 虚拟环境
+.venv/
+.vscode/
 uv.lock
-__pycache__
+
+# Python 缓存
+__pycache__/
 **/__pycache__/
-.git
+*.pyc
+
+# Git 相关
+.git/
 .gitignore
-logs
-.vscode
-models
-datasets
-data
+
+# 编辑器/IDE
+.vscode/
+
+# 日志文件
+logs/
+*.log
+
+# 模型、数据、输出目录（如果不需要打包到镜像）
+models/
+datasets/
+data/
+data-en/
+data-zh/
+outputs/
+
+# 压缩包或临时文件
 *.tar
-outputs
+*.zip
+*.gz
+*.ckpt
+*.h5
+*.pt
+*.pkl

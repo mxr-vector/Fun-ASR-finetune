@@ -50,7 +50,7 @@ COPY pyproject.toml .python-version ./
 
 # 同步依赖，--active 强制使用当前 venv，避免重建
 RUN uv sync --extra cu128 --active
-
+RUN uv pip install transformers==4.57.6 peft funasr==1.3.1
 
 # 判断是否为空，只有非空才安装 flash-attn
 RUN if [ -n "$FLASH_ATTN" ]; then \

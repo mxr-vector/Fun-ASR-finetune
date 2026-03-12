@@ -8,9 +8,11 @@ import os
 from funasr import AutoModel
 
 # ===== 配置 =====
-BASE_MODEL_DIR = "models/Fun-ASR-Nano-2512"
-STAGE3_CKPT = "models/lora_ckpt/model.pt.best"  # Stage 3 checkpoint
-OUT_DIR = "models/Fun-ASR-Nano-merged"
+home_dir = os.environ.get("HOME")  # 从环境变量获取
+models_dir = os.path.join(home_dir, "mydata", "models")
+BASE_MODEL_DIR = os.path.join(models_dir, "Fun-ASR-Nano-2512")
+STAGE3_CKPT = os.path.join(models_dir, "lora_ckpt", "model.pt.best") 
+OUT_DIR = os.path.join(models_dir, "Fun-ASR-Nano-merged")
 
 print("=" * 70)
 print("LoRA 合并脚本（修复版）")

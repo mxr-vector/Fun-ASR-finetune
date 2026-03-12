@@ -6,7 +6,6 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "compute-wer>=0.2.3",
-    "deepspeed>=0.18.5",
     "matplotlib>=3.10.8",
     "openai-whisper>=20250625",
     "pyopenjtalk-plus>=0.4.1.post7",

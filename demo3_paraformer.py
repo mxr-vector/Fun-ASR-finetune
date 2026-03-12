@@ -3,7 +3,9 @@ from funasr import AutoModel
 
 
 def main():
-    model_dir = "models/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
+    home_dir = os.environ.get("HOME")  # 从环境变量获取
+    models_dir = os.path.join(home_dir, "mydata", "models")
+    model_dir = os.path.join(models_dir, "speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch")
 
     # 初始化模型
     model = AutoModel(

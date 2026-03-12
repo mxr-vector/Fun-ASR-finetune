@@ -7,13 +7,17 @@
 Fun-ASR 是通义实验室推出的端到端语音识别大模型，是基于数千万小时真实语音数据训练而成，具备强大的上下文理解能力与行业适应性，支持低延迟实时听写，并且覆盖 31 个语种。在教育、金融等垂直领域表现出色，能准确识别专业术语与行业表达，有效应对"幻觉"生成和语种混淆等挑战，实现"听得清、懂其意、写得准"。
 
 # 项目启动说明
+
+torch and cuda: https://pytorch.org/get-started/previous-versions/
+flash-attn PyTorch Compatibility：https://flashattn.dev/compatibility/pytorch
 ```bash
 uv sync --extra cu128
-uv pip install transformers==4.57.6 peft funasr==1.3.1
-
+uv pip install transformers==4.57.6 peft funasr==1.3.1 deepspeed
 # 训练qwen3-asr 需要额外安装以下插件
 uv pip install datasets qwen_asr
-uv pip install -U flash-attn --no-build-isolation
+# export MAX_JOBS=2
+# uv pip install -U flash-attn==2.8.3 --no-build-isolation
+uv pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiTRUE-cp311-cp311-linux_x86_64.whl 
 ```
 
 <div align="center">
@@ -568,6 +572,15 @@ uv run train_log_analyzer.py log.txt
 - vLLM (GPU) 最佳部署实践: 使用 vLLM 实现对 Fun-ASR 的加速. [Repository](https://github.com/yuekaizhang/Fun-ASR-vllm)
 - llama（GGUF）最佳推理实践：[Repository](https://github.com/HaujetZhao/Fun-ASR-GGUF)
 - Qwen3-ASR 训练项目：[Repository](https://github.com/QwenLM/Qwen3-ASR)
+
+## 其他问题
+
+**1. demo1.py运行失败：t[0] += vadsegments[j][0]**
+funasr1.3.1未对nano时间戳做兼容，nano不符合funasr的工具标准。解决方法: https://github.com/FunAudioLLM/Fun-ASR/issues/72
+
+**2.运行finetune_xxx.sh 报错** 
+（1） 模型路径未找到,请确认模型资源是否位于 $HOME/mydata/models下
+（2） 默认配置是双卡运行，检测实际卡索引不匹配。请调整 `export CUDA_VISIBLE_DEVICES="0"`
 
 ## Citations
 

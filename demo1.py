@@ -1,9 +1,11 @@
 import torch
-
+import os
 
 def main():
-    model_dir = "models/Fun-ASR-Nano-2512"
-    # model_dir = "models/Fun-ASR-Nano-merged"
+    home_dir = os.environ.get("HOME")  # 从环境变量获取
+    models_dir = os.path.join(home_dir, "mydata", "models")
+    model_dir = os.path.join(models_dir, "Fun-ASR-Nano-2512")
+    # model_dir = os.path.join(models_dir, "Fun-ASR-Nano-merged")
     device = (
         "cuda:0"
         if torch.cuda.is_available()

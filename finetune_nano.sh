@@ -18,8 +18,7 @@ fi
 echo "Using gpu_num = $gpu_num"
 
 # 预训练模型路径
-MODELS_DIR="$HOME/mydata/models"
-model_name_or_model_dir="${MODELS_DIR}/Fun-ASR-Nano-2512"
+model_name_or_model_dir="models/Fun-ASR-Nano-2512"
 
 # ============ 修改：直接指向预混合的数据 ============
 data_dir="${workspace}/data/staged"

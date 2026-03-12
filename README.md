@@ -9,11 +9,13 @@ Fun-ASR is an end-to-end speech recognition large model launched by Tongyi Lab. 
 # Project Kickoff Briefing
 ```bash
 uv sync --extra cu128
-uv pip install transformers==4.57.6 peft
+uv pip install transformers==4.57.6 peft funasr==1.3.1 deepspeed
 
 # Training qwen3-asr requires the additional installation of the following plugins:
 uv pip install datasets qwen_asr
-# uv pip install -U flash-attn --no-build-isolation
+# export MAX_JOBS=2
+# uv pip install -U flash-attn==2.8.3 --no-build-isolation
+uv pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiTRUE-cp311-cp311-linux_x86_64.whl
 ```
 
 <div align="center">
@@ -407,6 +409,10 @@ Docker training containers are designed for single-use. Therefore, during traini
 # build image
 docker build -t funasr-finetune:Dockerfile .
 
+# qwen3-asr need speed by flash-attn
+# cuda工具链 https://developer.nvidia.com/cuda-12-8-0-download-archive
+docker build -f Dockerfile-flash-attn -t funasr-finetune:Dockerfile-flash-attn .
+
 docker builder prune --filter "until=24h"
 ```
 
@@ -483,6 +489,7 @@ docker run -it --shm-size=8g --gpus=all --cpus=8 \
 # Start training
 nohup bash finetune_paraformer.sh > full_train_paraformer.log 2>&1 &
 ```
+
 
 ## Multi-card training
 

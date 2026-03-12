@@ -17,7 +17,7 @@ uv pip install transformers==4.57.6 peft funasr==1.3.1 deepspeed
 uv pip install datasets qwen_asr
 # export MAX_JOBS=2
 # uv pip install -U flash-attn==2.8.3 --no-build-isolation
-uv pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiTRUE-cp311-cp311-linux_x86_64.whl 
+uv pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiTRUE-cp311-cp311-linux_x86_64.whl
 ```
 
 <div align="center">
@@ -415,7 +415,7 @@ docker build -t funasr-finetune:Dockerfile .
 
 # qwen3-asr 需要使用flash-attn加速的 至少4核cpu
 # cuda工具链 https://developer.nvidia.com/cuda-12-8-0-download-archive
-docker build --build-arg FLASH_ATTN=1 -f Dockerfile-deepSpeed -t funasr-finetune:Dockerfile-deepSpeed .
+docker build -f Dockerfile-flash-attn -t funasr-finetune:Dockerfile-flash-attn .
 
 # 清理冗余构建缓存层
 docker builder prune --filter "until=24h"
@@ -502,16 +502,16 @@ nohup bash finetune_paraformer.sh > full_train.log 2>&1 &
 
 # Qwen3-ASR容器训练
 ```bash
-mkdir nano-finetune
+mkdir qwen3asr-finetune
 
 # 启动临时容器拷贝文件到本地
-docker run -it --name nano-finetune funasr-finetune:Dockerfile /bin/bash
+docker run -it --name qwen3asr-finetune funasr-finetune:Dockerfile-flash-attn /bin/bash
 
 # 开新终端 拷贝数据 拷贝一些你想自己调试的文件
-docker cp nano-finetune:/workspace $PWD
+docker cp qwen3asr-finetune:/workspace $PWD
 
 # 退出容器并删除临时容器
-docker rm -f nano-finetune
+docker rm -f qwen3asr-finetune
 
 mkdir $PWD/workspace/models $PWD/workspace/data  $PWD/workspace/outputs
 # 拷贝模型到本地
@@ -529,11 +529,17 @@ docker run -it --network=host --shm-size=16g \
 -e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
 -v $PWD/workspace:/workspace \
 --restart=on-failure \
---name nano-finetune funasr-finetune:Dockerfile /bin/bash
+--name qwen3asr-finetune funasr-finetune:Dockerfile-flash-attn /bin/bash
 
 # 开启训练
-nohup bash auto_finetune.sh > full_train.log 2>&1 &
+nohup bash finetune_qwen3asr.sh > full_train.log 2>&1 &
 ```
+
+## 多卡训练
+
+目前，对于 funasr-nano-2512，您需要在模型设置中添加以下配置:
+
+![Multi-card-training](resource/image4.png)
 
 ## nano合并模型
 

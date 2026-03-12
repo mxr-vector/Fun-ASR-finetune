@@ -4,8 +4,7 @@ LABEL maintainer="YuanJie" \
     description="An Acoustic Feature Detection Mirror Construction Project" \
     license="MIT" \
     email="wangjh0825@qq.com"
-# 接收 flash_attn 参数
-ARG FLASH_ATTN
+    
 # 设置非交互模式，避免 apt 安装时卡住
 ENV DEBIAN_FRONTEND=noninteractive
 # 写入阿里云 Debian 12 源（deb822 格式）

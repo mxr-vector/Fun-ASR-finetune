@@ -200,6 +200,93 @@ class MakeEveryCheckpointInferableCallback(TrainerCallback):
         return control
 
 
+# ─── LoRA 相关 ────────────────────────────────────────────────────────────────
+
+def apply_lora_to_model(model, args_cli):
+    """对 thinker 的 LLM 部分应用 LoRA，冻结 audio_tower"""
+    from peft import LoraConfig, TaskType, get_peft_model
+
+    thinker = model.thinker
+
+    # 1) 冻结 audio_tower 的所有参数
+    for p in thinker.audio_tower.parameters():
+        p.requires_grad = False
+    print("[LoRA] ✓ audio_tower 已冻结")
+
+    # 2) 冻结 lm_head
+    if hasattr(thinker, "lm_head"):
+        for p in thinker.lm_head.parameters():
+            p.requires_grad = False
+        print("[LoRA] ✓ lm_head 已冻结")
+
+    # 3) 解析 target_modules
+    target_modules = args_cli.lora_target_modules
+    if isinstance(target_modules, str):
+        target_modules = [m.strip() for m in target_modules.split(",")]
+
+    lora_config = LoraConfig(
+        task_type=TaskType.CAUSAL_LM,
+        inference_mode=False,
+        r=args_cli.lora_r,
+        lora_alpha=args_cli.lora_alpha,
+        lora_dropout=args_cli.lora_dropout,
+        target_modules=target_modules,
+        bias="none",
+        modules_to_save=None,
+    )
+
+    # 4) 对 thinker 整体应用 LoRA（peft 会自动只在匹配 target_modules 的 Linear 上插入 adapter）
+    thinker = get_peft_model(thinker, lora_config)
+    model.thinker = thinker
+
+    # 5) 关键：启用 input_require_grads，解决 LoRA + gradient checkpointing 兼容性
+    #    LoRA 冻结了 embed_tokens，导致 embedding 输出无 requires_grad，
+    #    gradient checkpointing 需要输入有 requires_grad 才能反向传播
+    model.thinker.enable_input_require_grads()
+    print("[LoRA] ✓ enable_input_require_grads 已启用")
+
+    # 6) 确保 audio_tower 参数依然冻结（get_peft_model 不会影响它们，但双保险）
+    for p in model.thinker.base_model.model.audio_tower.parameters():
+        p.requires_grad = False
+
+    # 7) 打印参数统计
+    thinker.print_trainable_parameters()
+
+    return model
+
+
+class LoRACheckpointCallback(TrainerCallback):
+    """LoRA 模式下，在每个 checkpoint 保存时额外保存 adapter 权重"""
+    def __init__(self, base_model_path: str):
+        self.base_model_path = base_model_path
+
+    def on_save(self, args: TrainingArguments, state, control, **kwargs):
+        if args.process_index != 0:
+            return control
+
+        ckpt_dir = os.path.join(args.output_dir, f"checkpoint-{state.global_step}")
+        if not os.path.isdir(ckpt_dir):
+            ckpt_dir = kwargs.get("checkpoint", ckpt_dir)
+
+        # 保存 adapter 权重
+        model = kwargs.get("model")
+        if model is not None and hasattr(model, "thinker"):
+            thinker = model.thinker
+            # 如果是 DDP 包裹的，取 module
+            if hasattr(thinker, "module"):
+                thinker = thinker.module
+            if hasattr(thinker, "save_pretrained"):
+                adapter_dir = os.path.join(ckpt_dir, "adapter")
+                thinker.save_pretrained(adapter_dir)
+                print(f"[LoRA] ✓ Adapter 权重已保存到 {adapter_dir}")
+
+        # 复制推理所需的配置文件
+        copy_required_hf_files_for_qwen_asr(self.base_model_path, ckpt_dir)
+        return control
+
+
+# ─── 参数解析 ──────────────────────────────────────────────────────────────────
+
 def parse_args():
     p = argparse.ArgumentParser("Qwen3-ASR Finetuning")
 
@@ -236,6 +323,19 @@ def parse_args():
     p.add_argument("--resume_from", type=str, default="")
     p.add_argument("--resume", type=int, default=0)
 
+    # LoRA
+    p.add_argument("--use_lora", type=int, default=0, help="是否使用 LoRA 微调 (0/1)")
+    p.add_argument("--lora_r", type=int, default=16, help="LoRA rank")
+    p.add_argument("--lora_alpha", type=int, default=32, help="LoRA alpha")
+    p.add_argument("--lora_dropout", type=float, default=0.05, help="LoRA dropout")
+    p.add_argument("--lora_target_modules", type=str,
+                   default="q_proj,v_proj,o_proj,gate_proj,up_proj,down_proj",
+                   help="LoRA target modules, 逗号分隔")
+
+    # Gradient checkpointing
+    p.add_argument("--gradient_checkpointing", type=int, default=0,
+                   help="是否启用 gradient checkpointing (0/1)")
+
     return p.parse_args()
 
 
@@ -257,11 +357,41 @@ def main():
     patch_outer_forward(model)
     model.generation_config = GenerationConfig.from_model_config(model.config)
 
+    # ── LoRA 应用 ──
+    use_lora = args_cli.use_lora == 1
+    if use_lora:
+        print("=" * 70)
+        print("[LoRA] 正在应用 LoRA 微调...")
+        print(f"[LoRA] r={args_cli.lora_r}, alpha={args_cli.lora_alpha}, "
+              f"dropout={args_cli.lora_dropout}")
+        print(f"[LoRA] target_modules={args_cli.lora_target_modules}")
+        print("=" * 70)
+        model = apply_lora_to_model(model, args_cli)
+
+    # ── Gradient Checkpointing ──
+    if args_cli.gradient_checkpointing == 1:
+        if use_lora:
+            # LoRA 模式：仅对 text model (decoder) 启用，跳过已冻结的 audio_tower
+            # PeftModel 结构: model.thinker.base_model.model = 原始 thinker
+            #   原始 thinker.model = Qwen3ASRThinkerTextModel (decoder)
+            #   原始 thinker.audio_tower = 音频编码器 (已冻结，不应开启 grad ckpt)
+            base_thinker = model.thinker.base_model.model  # 原始 thinker
+            if hasattr(base_thinker, "model"):  # .model = TextModel (decoder)
+                base_thinker.model.gradient_checkpointing = True
+                print("[GradCkpt] ✓ text model (decoder) gradient_checkpointing 已启用")
+                print("[GradCkpt]   audio_tower 跳过（已冻结）")
+        else:
+            # 全量微调模式：对整个 thinker 启用
+            if hasattr(model.thinker, "gradient_checkpointing_enable"):
+                model.thinker.gradient_checkpointing_enable()
+                print("[GradCkpt] ✓ thinker gradient_checkpointing 已启用")
+
     raw_ds = load_dataset(
         "json",
         data_files={
             "train": args_cli.train_file,
-            **({"validation": args_cli.eval_file} if args_cli.eval_file else {}),
+            **({
+                "validation": args_cli.eval_file} if args_cli.eval_file else {}),
         },
     )
     ds = raw_ds.map(make_preprocess_fn_prefix_only(processor), num_proc=1)
@@ -296,10 +426,20 @@ def main():
         do_eval=bool(args_cli.eval_file),
         bf16=use_bf16,
         fp16=not use_bf16,
-        ddp_find_unused_parameters=False,
+        ddp_find_unused_parameters=True if use_lora else False,
         remove_unused_columns=False,
         report_to="none",
+        # LoRA 模式下不在 TrainingArguments 中开启 gradient_checkpointing，
+        # 因为我们已手动仅对 text model 启用，避免 Trainer 对冻结的 audio_tower 也启用
+        gradient_checkpointing=(args_cli.gradient_checkpointing == 1) and (not use_lora),
     )
+
+    # ── 回调 ──
+    callbacks = []
+    if use_lora:
+        callbacks.append(LoRACheckpointCallback(base_model_path=args_cli.model_path))
+    else:
+        callbacks.append(MakeEveryCheckpointInferableCallback(base_model_path=args_cli.model_path))
 
     trainer = CastFloatInputsTrainer(
         model=model,
@@ -308,7 +448,7 @@ def main():
         eval_dataset=ds.get("validation", None),
         data_collator=collator,
         tokenizer=processor.tokenizer,
-        callbacks=[MakeEveryCheckpointInferableCallback(base_model_path=args_cli.model_path)],
+        callbacks=callbacks,
     )
 
     resume_from = (args_cli.resume_from or "").strip()
@@ -321,6 +461,18 @@ def main():
         trainer.train(resume_from_checkpoint=resume_from)
     else:
         trainer.train()
+
+    # ── LoRA 模式：训练结束后保存最终 adapter 至 best_model/adapter ──
+    if use_lora and trainer.args.process_index == 0:
+        best_model_dir = os.path.join(args_cli.output_dir, "best_model")
+        os.makedirs(best_model_dir, exist_ok=True)
+        adapter_dir = os.path.join(best_model_dir, "adapter")
+        thinker = model.thinker
+        if hasattr(thinker, "module"):
+            thinker = thinker.module
+        thinker.save_pretrained(adapter_dir)
+        copy_required_hf_files_for_qwen_asr(args_cli.model_path, best_model_dir)
+        print(f"[LoRA] ✓ 最终 adapter 已保存到 {adapter_dir}")
 
 
 if __name__ == "__main__":

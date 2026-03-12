@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 三阶段渐进式训练脚本 - Qwen3-ASR-1.7B
+# 三阶段渐进式训练脚本 - Qwen3-ASR-1.7B (LoRA 微调版)
 # Stage 1: 通用/专业 50/50 混合热身
 # Stage 2: 通用/专业 20/80 过渡精调
 # Stage 3: 纯专业数据终训
@@ -12,6 +12,9 @@ workspace=$(pwd)
 export CUDA_VISIBLE_DEVICES="2,3"
 gpu_num=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F "," '{print NF}')
 
+# ─── 显存优化：避免碎片化 ─────────────────────────────────────────────────────
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
 # ─── 路径配置 ────────────────────────────────────────────────────────────────
 MODEL_PATH="models/Qwen3-ASR-1.7B"
 DATA_ROOT="./data/staged"
@@ -20,6 +23,16 @@ OUTPUT_ROOT="./outputs/staged"
 # ─── 各阶段最优 checkpoint 路径（供下一阶段加载） ───────────────────────────
 STAGE1_CKPT="${OUTPUT_ROOT}/stage1/best_model"
 STAGE2_CKPT="${OUTPUT_ROOT}/stage2/best_model"
+
+# ─── LoRA 配置 ────────────────────────────────────────────────────────────────
+USE_LORA=1
+LORA_R=16
+LORA_ALPHA=32
+LORA_DROPOUT=0.05
+LORA_TARGET_MODULES="q_proj,v_proj,o_proj,gate_proj,up_proj,down_proj"
+
+# ─── Gradient Checkpointing ──────────────────────────────────────────────────
+GRADIENT_CHECKPOINTING=1
 
 # ─── 分布式参数（数组形式，避免多行字符串展开错误） ──────────────────────────
 DISTRIBUTED_ARGS=(
@@ -62,10 +75,14 @@ train_run() {
 
     log "════════════════════════════════════════════"
     log "  输入模型 : ${input_model}"
+    log "  LoRA     : USE_LORA=${USE_LORA}, r=${LORA_R}, alpha=${LORA_ALPHA}"
+    log "  GradCkpt : ${GRADIENT_CHECKPOINTING}"
     log "  断点续传 : ${resume_ckpt:-无}"
     log "  训练数据 : ${stage_data}/train.jsonl"
     log "  验证数据 : ${stage_data}/val.jsonl"
     log "  输出目录 : ${stage_out}"
+    log "  BS/GPU   : ${batch_size}, GradAcc: ${grad_acc}"
+    log "  有效BS   : $((batch_size * grad_acc * gpu_num))"
     log "════════════════════════════════════════════"
 
     if [ -n "${resume_ckpt}" ]; then
@@ -95,6 +112,12 @@ train_run() {
             --pin_memory            1 \
             --persistent_workers    1 \
             --prefetch_factor       2 \
+            --use_lora              "${USE_LORA}" \
+            --lora_r                "${LORA_R}" \
+            --lora_alpha            "${LORA_ALPHA}" \
+            --lora_dropout          "${LORA_DROPOUT}" \
+            --lora_target_modules   "${LORA_TARGET_MODULES}" \
+            --gradient_checkpointing "${GRADIENT_CHECKPOINTING}" \
         &> "${log_file}"
 
     if [ $? -eq 0 ]; then
@@ -112,14 +135,14 @@ log "从 Stage ${START_STAGE} 开始训练"
 # ─── Stage 1: 50/50 热身（直接加载预训练权重） ───────────────────────────────
 if [ "${START_STAGE}" -le 1 ]; then
     log "=== Stage 1: 通用/专业 50-50 混合热身 ==="
-    # 有效 BS = batch_size(32) × grad_acc(4) × GPU数(2) = 256
+    # 有效 BS = batch_size(4) × grad_acc(8) × GPU数(2) = 64
     train_run \
         --stage_data   "${DATA_ROOT}/stage1" \
         --stage_out    "${OUTPUT_ROOT}/stage1" \
         --input_model  "${MODEL_PATH}" \
-        --batch_size   32 \
-        --grad_acc     4 \
-        --lr           3e-5 \
+        --batch_size   4 \
+        --grad_acc     8 \
+        --lr           1e-4 \
         --epochs       3 \
         --save_steps   400 \
         --warmup_ratio 0.05
@@ -129,14 +152,14 @@ fi
 if [ "${START_STAGE}" -le 2 ]; then
     log "=== Stage 2: 通用/专业 20-80 过渡精调 ==="
     [ -d "${STAGE1_CKPT}" ] || { log "错误: 找不到 Stage 1 checkpoint: ${STAGE1_CKPT}"; exit 1; }
-    # 有效 BS = batch_size(16) × grad_acc(8) × GPU数(2) = 256
+    # 有效 BS = batch_size(4) × grad_acc(8) × GPU数(2) = 64
     train_run \
         --stage_data   "${DATA_ROOT}/stage2" \
         --stage_out    "${OUTPUT_ROOT}/stage2" \
         --input_model  "${STAGE1_CKPT}" \
-        --batch_size   16 \
+        --batch_size   4 \
         --grad_acc     8 \
-        --lr           1e-5 \
+        --lr           5e-5 \
         --epochs       4 \
         --save_steps   200 \
         --warmup_ratio 0.03
@@ -146,14 +169,14 @@ fi
 if [ "${START_STAGE}" -le 3 ]; then
     log "=== Stage 3: 纯专业数据终训 ==="
     [ -d "${STAGE2_CKPT}" ] || { log "错误: 找不到 Stage 2 checkpoint: ${STAGE2_CKPT}"; exit 1; }
-    # 有效 BS = batch_size(8) × grad_acc(16) × GPU数(2) = 256
+    # 有效 BS = batch_size(4) × grad_acc(8) × GPU数(2) = 64
     train_run \
         --stage_data   "${DATA_ROOT}/stage3" \
         --stage_out    "${OUTPUT_ROOT}/stage3" \
         --input_model  "${STAGE2_CKPT}" \
-        --batch_size   8 \
-        --grad_acc     16 \
-        --lr           5e-6 \
+        --batch_size   4 \
+        --grad_acc     8 \
+        --lr           2e-5 \
         --epochs       5 \
         --save_steps   100 \
         --warmup_ratio 0.02
@@ -162,3 +185,9 @@ fi
 # ─── 完成 ────────────────────────────────────────────────────────────────────
 log "所有阶段训练完成！"
 log "最终模型位于: ${OUTPUT_ROOT}/stage3"
+log ""
+log "如需将 LoRA 合并回完整模型，请运行:"
+log "  python tools/lora_merge_qwen3asr.py \\"
+log "      --base_model_path ${MODEL_PATH} \\"
+log "      --adapter_path ${OUTPUT_ROOT}/stage3/best_model/adapter \\"
+log "      --output_path ${OUTPUT_ROOT}/merged_model"

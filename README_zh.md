@@ -487,14 +487,15 @@ mv <模型地址> $PWD/workspace/models
 mv <数据地址> $PWD/workspace/data
 
 docker run -it --shm-size=8g --gpus=all --cpus=8 \
-  -p 10097:10095 \
-  -v $PWD/workspace:/workspace \
-  -e LANG=C.UTF-8 \
-  -e LC_ALL=C.UTF-8 \
-  -e NVIDIA_VISIBLE_DEVICES=all \
-  -e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
-  --name paraformer-funasr \
-  funasr-finetune:Dockerfile /bin/bash
+-p 10097:10095 \
+-e LANG=C.UTF-8 \
+-e LC_ALL=C.UTF-8 \
+-e NVIDIA_VISIBLE_DEVICES=all \
+-e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+-v $PWD/workspace:/workspace \
+--restart=on-failure \
+--name paraformer-funasr \
+funasr-finetune:Dockerfile /bin/bash
 
 # 开启训练
 nohup bash finetune_paraformer.sh > full_train.log 2>&1 &
@@ -541,7 +542,7 @@ nohup bash finetune_qwen3asr.sh > full_train.log 2>&1 &
 
 ![Multi-card-training](resource/image4.png)
 
-## nano合并模型
+## nano合并权重
 
 训练完成后若为`nano`模型你需要配置`tools/lora_merge.py`,完成最终模型合并.你可能看到经过LoRA训练的模型很大，远超几mb，因为为了支持断点续训文件仍保存了音频编码器和基础LLM的权重。这使您可在任何时刻暂停并重启训练，无需原始基础模型文件。
 ```bash
@@ -549,6 +550,15 @@ nohup bash finetune_qwen3asr.sh > full_train.log 2>&1 &
 uv run tools/lora_merge.py
 ```
 
+## qwen3-asr合并权重
+
+```bash
+# 训练完成后合并 LoRA 权重
+uv run tools/lora_merge_qwen3asr.py \
+    --base_model_path models/Qwen3-ASR-1.7B \
+    --adapter_path outputs/staged/stage3/best_model/adapter \
+    --output_path outputs/merged_model
+```
 ## 解码测试
 
 ```bash

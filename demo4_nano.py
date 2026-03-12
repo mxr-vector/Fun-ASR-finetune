@@ -8,12 +8,10 @@ import sys
 import os
 import torch
 
-home_dir = os.environ.get("HOME")  # 从环境变量获取
-models_dir = os.path.join(home_dir, "mydata", "models")
 
 def load_finetuned_model(
-    base_model_dir=os.path.join(models_dir, "Fun-ASR-Nano-2512"),
-    stage3_adaptor=os.path.join(models_dir, "lora_ckpt", "model.pt.best"),
+    base_model_dir="models/Fun-ASR-Nano-2512",
+    stage3_adaptor="models/lora_ckpt/model.pt.best",
     use_lora=True,
     device="cuda",
 ):

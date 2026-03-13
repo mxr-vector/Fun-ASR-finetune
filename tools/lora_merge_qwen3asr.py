@@ -30,8 +30,7 @@ def main():
 
     # 1. 加载原始模型
     print(f"[1/4] 加载原始模型: {args.base_model_path}")
-    use_bf16 = torch.cuda.is_available() and torch.cuda.get_device_capability(0)[0] >= 8
-    dtype = torch.bfloat16 if use_bf16 else torch.float16
+    dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
 
     asr_wrapper = Qwen3ASRModel.from_pretrained(
         args.base_model_path,

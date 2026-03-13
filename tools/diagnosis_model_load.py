@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import torch
 from funasr import AutoModel
+# from qwen_asr import Qwen3ASRModel
 
 print("=" * 70)
 print("诊断模型加载")
@@ -8,9 +9,15 @@ print("=" * 70)
 
 # 1. 加载原始模型，看 LLM 如何初始化
 print("\n[1] 加载原始模型...")
+model_path = "models/Fun-ASR-Nano-2512"
 model_original = AutoModel(
-    model="models/Fun-ASR-Nano-2512", trust_remote_code=True, device="cpu"
+    model=model_path, trust_remote_code=True, device="cpu"
 )
+
+# model_path = "models/Qwen3-ASR-1.7B"
+# model_original = Qwen3ASRModel.from_pretrained(
+#     model_path, device_map="cpu"
+# )
 
 print("\n检查 LLM 参数来源:")
 net = model_original.model
@@ -50,7 +57,7 @@ else:
 # 3. 模拟 Stage 3 加载
 print("\n[3] 模拟 Stage 3 加载过程...")
 model_stage3 = AutoModel(
-    model="models/Fun-ASR-Nano-2512",
+    model= model_path,
     init_param="outputs/stage2/model.pt.best",
     trust_remote_code=True,
     device="cpu",

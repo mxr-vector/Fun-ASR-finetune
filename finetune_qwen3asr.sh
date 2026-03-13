@@ -49,6 +49,7 @@ log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 train_run() {
     local stage_data="" stage_out="" input_model=""
     local batch_size="" grad_acc="" lr="" epochs="" save_steps=""
+    local lora_adapter_path=""
     local warmup_ratio="0.05"
 
     while [[ $# -gt 0 ]]; do
@@ -62,6 +63,7 @@ train_run() {
             --epochs)        epochs="$2";        shift 2 ;;
             --save_steps)    save_steps="$2";    shift 2 ;;
             --warmup_ratio)  warmup_ratio="$2";  shift 2 ;;
+            --lora_adapter_path) lora_adapter_path="$2"; shift 2 ;;
             *) log "未知参数: $1"; exit 1 ;;
         esac
     done
@@ -78,6 +80,7 @@ train_run() {
     log "  LoRA     : USE_LORA=${USE_LORA}, r=${LORA_R}, alpha=${LORA_ALPHA}"
     log "  GradCkpt : ${GRADIENT_CHECKPOINTING}"
     log "  断点续传 : ${resume_ckpt:-无}"
+    log "  LoRA续训 : ${lora_adapter_path:-无}"
     log "  训练数据 : ${stage_data}/train.jsonl"
     log "  验证数据 : ${stage_data}/val.jsonl"
     log "  输出目录 : ${stage_out}"
@@ -91,11 +94,14 @@ train_run() {
         log ">> 未发现断点，从头开始训练"
     fi
 
-    # resume_ckpt 非空时追加 --resume_from_checkpoint，否则该行不展开
+    # resume_ckpt 非空时追加 --resume_from，否则该行不展开
+    # 使用 || true 避免 set -e 导致脚本直接退出，以便捕获退出码
+    local exit_code=0
     torchrun "${DISTRIBUTED_ARGS[@]}" \
         tools/qwen3_asr_sft.py \
             --model_path            "${input_model}" \
-            ${resume_ckpt:+--resume_from_checkpoint "${resume_ckpt}"} \
+            ${resume_ckpt:+--resume_from "${resume_ckpt}"} \
+            ${lora_adapter_path:+--lora_adapter_path "${lora_adapter_path}"} \
             --train_file            "${stage_data}/train_qwen3asr.jsonl" \
             --eval_file             "${stage_data}/val_qwen3asr.jsonl" \
             --output_dir            "${stage_out}" \
@@ -118,12 +124,12 @@ train_run() {
             --lora_dropout          "${LORA_DROPOUT}" \
             --lora_target_modules   "${LORA_TARGET_MODULES}" \
             --gradient_checkpointing "${GRADIENT_CHECKPOINTING}" \
-        &> "${log_file}"
+        &> "${log_file}" || exit_code=$?
 
-    if [ $? -eq 0 ]; then
+    if [ ${exit_code} -eq 0 ]; then
         log "✓ 训练完成 → ${stage_out}"
     else
-        log "✗ 训练失败，日志: ${log_file}"
+        log "✗ 训练失败（exit code: ${exit_code}），日志: ${log_file}"
         exit 1
     fi
 }
@@ -151,12 +157,13 @@ fi
 # ─── Stage 2: 20/80 过渡（加载 Stage 1 checkpoint） ─────────────────────────
 if [ "${START_STAGE}" -le 2 ]; then
     log "=== Stage 2: 通用/专业 20-80 过渡精调 ==="
-    [ -d "${STAGE1_CKPT}" ] || { log "错误: 找不到 Stage 1 checkpoint: ${STAGE1_CKPT}"; exit 1; }
+    [ -d "${STAGE1_CKPT}/adapter" ] || { log "错误: 找不到 Stage 1 adapter: ${STAGE1_CKPT}/adapter"; exit 1; }
     # 有效 BS = batch_size(4) × grad_acc(8) × GPU数(2) = 64
     train_run \
         --stage_data   "${DATA_ROOT}/stage2" \
         --stage_out    "${OUTPUT_ROOT}/stage2" \
-        --input_model  "${STAGE1_CKPT}" \
+        --input_model  "${MODEL_PATH}" \
+        --lora_adapter_path "${STAGE1_CKPT}/adapter" \
         --batch_size   4 \
         --grad_acc     8 \
         --lr           5e-5 \
@@ -168,12 +175,13 @@ fi
 # ─── Stage 3: 纯专业精调（加载 Stage 2 checkpoint） ─────────────────────────
 if [ "${START_STAGE}" -le 3 ]; then
     log "=== Stage 3: 纯专业数据终训 ==="
-    [ -d "${STAGE2_CKPT}" ] || { log "错误: 找不到 Stage 2 checkpoint: ${STAGE2_CKPT}"; exit 1; }
+    [ -d "${STAGE2_CKPT}/adapter" ] || { log "错误: 找不到 Stage 2 adapter: ${STAGE2_CKPT}/adapter"; exit 1; }
     # 有效 BS = batch_size(4) × grad_acc(8) × GPU数(2) = 64
     train_run \
         --stage_data   "${DATA_ROOT}/stage3" \
         --stage_out    "${OUTPUT_ROOT}/stage3" \
-        --input_model  "${STAGE2_CKPT}" \
+        --input_model  "${MODEL_PATH}" \
+        --lora_adapter_path "${STAGE2_CKPT}/adapter" \
         --batch_size   4 \
         --grad_acc     8 \
         --lr           2e-5 \

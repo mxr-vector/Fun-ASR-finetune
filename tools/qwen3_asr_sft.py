@@ -331,6 +331,8 @@ def parse_args():
     p.add_argument("--lora_target_modules", type=str,
                    default="q_proj,v_proj,o_proj,gate_proj,up_proj,down_proj",
                    help="LoRA target modules, 逗号分隔")
+    p.add_argument("--lora_adapter_path", type=str, default="",
+                   help="上一阶段的 LoRA adapter 路径，用于多阶段续训")
 
     # Gradient checkpointing
     p.add_argument("--gradient_checkpointing", type=int, default=0,
@@ -366,7 +368,27 @@ def main():
               f"dropout={args_cli.lora_dropout}")
         print(f"[LoRA] target_modules={args_cli.lora_target_modules}")
         print("=" * 70)
-        model = apply_lora_to_model(model, args_cli)
+
+        adapter_path = (args_cli.lora_adapter_path or "").strip()
+        if adapter_path:
+            # 多阶段续训：加载前一阶段的 adapter 权重
+            from peft import PeftModel
+            print(f"[LoRA] 多阶段续训: 加载前一阶段 adapter 从 {adapter_path}")
+            model.thinker = PeftModel.from_pretrained(
+                model.thinker, adapter_path, is_trainable=True,
+            )
+            model.thinker.enable_input_require_grads()
+            # 冻结 audio_tower（双保险）
+            for p in model.thinker.base_model.model.audio_tower.parameters():
+                p.requires_grad = False
+            if hasattr(model.thinker.base_model.model, "lm_head"):
+                for p in model.thinker.base_model.model.lm_head.parameters():
+                    p.requires_grad = False
+            model.thinker.print_trainable_parameters()
+            print(f"[LoRA] ✓ 前一阶段 adapter 加载完成")
+        else:
+            # 首次训练：新建 LoRA adapter
+            model = apply_lora_to_model(model, args_cli)
 
     # ── Gradient Checkpointing ──
     if args_cli.gradient_checkpointing == 1:

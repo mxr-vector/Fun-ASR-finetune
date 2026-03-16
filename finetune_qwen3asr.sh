@@ -26,10 +26,10 @@ STAGE2_CKPT="${OUTPUT_ROOT}/stage2/best_model"
 
 # ─── LoRA 配置 ────────────────────────────────────────────────────────────────
 USE_LORA=1
-LORA_R=16
-LORA_ALPHA=32
+LORA_R=32
+LORA_ALPHA=64
 LORA_DROPOUT=0.05
-LORA_TARGET_MODULES="q_proj,v_proj,o_proj,gate_proj,up_proj,down_proj"
+LORA_TARGET_MODULES="q_proj,v_proj,k_proj,o_proj,gate_proj,up_proj,down_proj"
 
 # ─── Gradient Checkpointing ──────────────────────────────────────────────────
 GRADIENT_CHECKPOINTING=1
@@ -151,7 +151,7 @@ if [ "${START_STAGE}" -le 1 ]; then
         --lr           1e-4 \
         --epochs       3 \
         --save_steps   400 \
-        --warmup_ratio 0.05
+        --warmup_ratio 0.03
 fi
 
 # ─── Stage 2: 20/80 过渡（加载 Stage 1 checkpoint） ─────────────────────────
@@ -184,7 +184,7 @@ if [ "${START_STAGE}" -le 3 ]; then
         --lora_adapter_path "${STAGE2_CKPT}/adapter" \
         --batch_size   4 \
         --grad_acc     8 \
-        --lr           2e-5 \
+        --lr           3e-5 \
         --epochs       5 \
         --save_steps   100 \
         --warmup_ratio 0.02

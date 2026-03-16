@@ -2,6 +2,7 @@ import os
 
 import hydra
 import torch
+import json
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
@@ -30,14 +31,33 @@ def main_hydra(cfg: DictConfig):
 
     from funasr import AutoModel
 
-    model = AutoModel(
-        model=model_dir,
-        trust_remote_code=True,
-        vad_model="fsmn-vad",
-        vad_kwargs={"max_single_segment_time": 30000},
-        remote_code="./model.py",
-        device=device,
-    )
+    try:
+        model = AutoModel(
+            model=model_dir,
+            trust_remote_code=True,
+            vad_model="fsmn-vad",
+            vad_kwargs={"max_single_segment_time": 30000},
+            remote_code="./model.py",
+            device=device,
+        )
+    except AssertionError as e:
+        cfg_path = os.path.join(model_dir, "config.json") if isinstance(model_dir, str) else ""
+        if cfg_path and os.path.isfile(cfg_path):
+            try:
+                with open(cfg_path, "r", encoding="utf-8") as f:
+                    cfg_json = json.load(f)
+                model_type = str(cfg_json.get("model_type", "")).lower()
+                archs = cfg_json.get("architectures", []) or []
+                if model_type == "qwen3_asr" or "Qwen3ASRForConditionalGeneration" in archs:
+                    raise SystemExit(
+                        f"{e}\n"
+                        f"检测到你传入的是 Qwen3-ASR 模型目录：{model_dir}\n"
+                        f"该模型不属于 funasr 的 AutoModel 注册表，请改用：\n"
+                        f"  uv run decode_qwen3asr.py ++model_dir={model_dir} ++scp_file=... ++output_file=...\n"
+                    )
+            except Exception:
+                pass
+        raise
 
     output_dir = os.path.dirname(output_file)
     if output_dir and not os.path.exists(output_dir):

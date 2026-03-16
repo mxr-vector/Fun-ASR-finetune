@@ -3,6 +3,9 @@ import torch
 from funasr import AutoModel
 # from qwen_asr import Qwen3ASRModel
 
+"""
+诊断模型加载过程，验证 LLM 权重来源和 LoRA 参数添加情况
+"""
 print("=" * 70)
 print("诊断模型加载")
 print("=" * 70)

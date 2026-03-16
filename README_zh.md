@@ -565,6 +565,7 @@ uv run tools/lora_merge_qwen3asr.py \
 # 解码
 uv run decode.py  ++model_dir=models/Fun-ASR-Nano-merged   ++scp_file=data/domain/test/wav.scp   ++output_file=output.txt
 uv run decode.py  ++model_dir=models/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch   ++scp_file=data/domain/test/wav.scp   ++output_file=output.txt
+uv run decode_qwen3asr.py  ++model_dir=models/qwen3-asr-merged   ++scp_file=data/domain/test/wav.scp   ++output_file=output.txt
 # itn 逆文本正则化
 uv run tools/whisper_mix_normalize.py data/val_text.txt data/val_norm.txt
 uv run tools/whisper_mix_normalize.py output.txt output_norm.txt
